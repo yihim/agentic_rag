@@ -1,0 +1,10 @@
+black==24.10.0
+chroma==0.2.0
+crawl4ai==0.3.731
+docling==2.15.1
+fastapi==0.115.6
+gradio==5.10.0
+ollama==0.4.6
+langchain==0.3.14
+langchain-ollama==0.2.2
+langchai-openai==0.3.1
