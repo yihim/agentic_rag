@@ -21,7 +21,7 @@ pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https
 pip install magic-pdf[full] --extra-index-url https://wheels.myhloli.com
 ```
 
-## 4. Verify Magic-PDF Version
+## 4. Verify Magic-PDF Version (Ensure the version is > 0.7.0)
 ```bash
 magic-pdf --version
 ```
