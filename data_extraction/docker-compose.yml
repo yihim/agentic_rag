@@ -1,0 +1,23 @@
+services:
+  mineru:
+    build: ./mineru
+    ports:
+      - "8000:8000"
+    volumes:
+      - "./tmp:/app/tmp"
+      - "./data:/app/data"
+    networks:
+      - pc_network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - HOST_IP=host.docker.internal
+
+networks:
+  pc_network:
+    driver: bridge
