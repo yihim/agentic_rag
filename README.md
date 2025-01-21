@@ -1,37 +1,44 @@
-# agentic_rag
+# Agentic RAG
 
-# Project Setup
+## Prerequisites
 
-Follow these instructions to set up the development environment for this project.
+Ensure you have the following installed on your machine:
+- Docker Desktop (required for Magic-PDF)
+- Conda (for creating and managing environments)
 
-## 1. Create Conda Environment
+## Project Setup
 
+Follow these steps to set up the development environment for this project.
+
+
+### 1. *Data Extraction (Magic-PDF)*
+
+1. Navigate to the `data_extraction` directory:
+    ```bash
+    cd ./data_extraction
+    ```
+
+2. Build and start the Docker container using `docker-compose`:
+    ```bash
+    docker-compose up --build -d mineru
+    ```
+
+3. Once the container is running, use `requests` to post with a json object containing `file_path` as the key. The extracted data will be saved in the `./data_extraction/tmp/md` folder.
+
+Note: magic-pdf explicitly required transformers==4.42.4 to work and the project required an updated transformers version to work.
+
+### 2. *Create conda environment*
 ```bash
-conda create --name myenv python=3.10
-conda activate myenv
+conda create -n agentic_rag python=3.10
+conda activate agentic_rag
 ```
 
-## 2. Install PyTorch
+### 3. *Install PyTorch with CUDA Compatibility*
 ```bash
-pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu118
+pip install torch==2.5.0 torchvision==0.20.0 torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cu124
 ```
 
-## 3. Install Magic-PDF
-```bash
-pip install magic-pdf[full] --extra-index-url https://wheels.myhloli.com
-```
-
-## 4. Verify Magic-PDF Version (Ensure the version is > 0.7.0)
-```bash
-magic-pdf --version
-```
-
-## 5. Install PaddlePaddle GPU Version
-```bash
-python -m pip install paddlepaddle-gpu==2.6.1.post120 -f https://www.paddlepaddle.org.cn/whl/windows/mkl/avx/stable.html
-```
-
-## 6. Install Other Requirements
+### 4. *Install requirements*
 ```bash
 pip install -r requirements.txt
 ```
