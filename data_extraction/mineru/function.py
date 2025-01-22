@@ -5,13 +5,39 @@ from magic_pdf.data.read_api import read_local_images, read_local_office
 from magic_pdf.config.enums import SupportedPdfParseMethod
 import os
 import logging
+import torch
+import gc
+import sys
 import warnings
 
 warnings.filterwarnings("ignore")
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+# Configure root logger if not already configured
+if not logging.getLogger().handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(sys.stdout)
+        ]
+    )
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
+
+
+def clear_gpu_memory():
+    """Clear GPU memory and cache"""
+    if torch.cuda.is_available():
+        # Clear PyTorch GPU cache
+        torch.cuda.empty_cache()
+
+        # Force garbage collection
+        gc.collect()
+
+        logger.info("GPU memory cleared")
+    else:
+        logger.info("No GPU available")
 
 
 def extract_data_from_source(data_path: str) -> str:
@@ -30,7 +56,7 @@ def extract_data_from_source(data_path: str) -> str:
 
     try:
         if file_type in ["jpeg", "jpg", "png"]:
-            logging.info(f"Source is image file, processing {name_without_suff}")
+            logger.info(f"Source is image file, processing {name_without_suff}")
             ds = read_local_images(data_path)[0]
 
             ds.apply(doc_analyze, ocr=True).pipe_ocr_mode(image_writer).dump_md(
@@ -38,7 +64,7 @@ def extract_data_from_source(data_path: str) -> str:
             )
 
         elif file_type in ["doc", "docx", "ppt", "pptx"]:
-            logging.info(f"Source is office file, processing {name_without_suff}")
+            logger.info(f"Source is office file, processing {name_without_suff}")
             ds = read_local_office(data_path)[0]
 
             if ds.classify() == SupportedPdfParseMethod.OCR:
@@ -51,7 +77,7 @@ def extract_data_from_source(data_path: str) -> str:
                 )
 
         elif file_type == "pdf":
-            logging.info(f"Source is PDF file, processing {name_without_suff}")
+            logger.info(f"Source is PDF file, processing {name_without_suff}")
             reader1 = FileBasedDataReader("")
             pdf_bytes = reader1.read(data_path)
 
@@ -66,10 +92,12 @@ def extract_data_from_source(data_path: str) -> str:
                     md_writer, f"{name_without_suff}.md", image_dir
                 )
     except Exception as e:
+        logger.error(f"Unexpected error occurred in extract_data_from_source function: {e}", exc_info=True)
         print(f"Unexpected error occurred in extract_data_from_source function: {e}")
     finally:
         extracted_data_path = os.path.join(local_md_dir, name_without_suff + ".md")
-        logging.info(f"Extracted data saved in: {extracted_data_path}")
+        logger.info(f"Extracted data saved in: {extracted_data_path}")
+        clear_gpu_memory()
         return extracted_data_path
 
 

@@ -30,11 +30,23 @@ RUN conda run -n mineru pip install -r requirements.txt
 RUN wget https://github.com/opendatalab/MinerU/raw/master/scripts/download_models_hf.py -O download_models_hf.py && \
     conda run -n mineru python download_models_hf.py
 
-# Copy application code
+# Create GPU detection and config update script
 COPY . .
+RUN printf '#!/bin/bash\n\
+if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then\n\
+    echo "GPU detected, setting device-mode to cuda"\n\
+    device_mode="cuda"\n\
+else\n\
+    echo "No GPU detected, setting device-mode to cpu"\n\
+    device_mode="cpu"\n\
+fi\n\
+\n\
+jq --arg mode "$device_mode" \x27.["device-mode"] = $mode\x27 /root/magic-pdf.json > /root/magic-pdf.json.tmp && \
+mv /root/magic-pdf.json.tmp /root/magic-pdf.json\n\
+\n\
+exec conda run --no-capture-output -n mineru "$@"' > /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
 
-RUN jq '.["device-mode"] = "cuda"' /root/magic-pdf.json > /root/magic-pdf.json.tmp && mv /root/magic-pdf.json.tmp /root/magic-pdf.json
-
-# Default command to run the app
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "mineru"]
+# Set the entrypoint to our script
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
