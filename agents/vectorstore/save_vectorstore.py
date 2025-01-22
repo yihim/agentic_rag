@@ -3,13 +3,13 @@ from langchain.schema import Document
 import os
 from sentence_transformers import SentenceTransformer
 import torch
-from constants.models import (
+from agents.constants.models import (
     EMBEDDING_MODEL,
     TABLE_ORGANIZER_LLM,
     TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
 )
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from utils.models import quant_config_4_bit
+from agents.utils.models import quant_config_4_bit, set_random_seed
 from typing import Tuple
 from dotenv import load_dotenv
 import requests
@@ -22,7 +22,7 @@ warnings.filterwarnings("ignore")
 load_dotenv()
 login(os.getenv("HF_TOKEN_WRITE"), add_to_git_credential=True)
 device = "cuda" if torch.cuda.is_available() else "cpu"
-
+set_random_seed(42)
 
 def load_llm_and_tokenizer() -> (
     Tuple[AutoModelForCausalLM.from_pretrained, AutoTokenizer.from_pretrained]
@@ -76,17 +76,17 @@ def clean_and_organize_external_data(extracted_data_path: str):
                 output_ids[len(input_ids):]
                 for input_ids, output_ids in zip(input_ids.input_ids, generated_ids)
             ]
-            response = tokenizer.decode(generated_ids, skip_special_tokens=True)[0]
+            response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
             print(response)
 
 def extract_data_from_source(data_path: str):
     file_name = os.path.basename(data_path)
     file_name_without_ext = file_name.split(".")[0]
-    mounted_dir = "../data_extraction/data/"
+    mounted_dir = "../../data_extraction/data/"
     shutil.copy(data_path, mounted_dir)
     response = requests.post("http://localhost:8000/extract", json={'file_path': f"./data/{file_name}"})
     if response.status_code == 200:
-        extracted_md_data_path = f"../data_extraction/tmp/md/{file_name_without_ext}.md"
+        extracted_md_data_path = f"../../data_extraction/tmp/md/{file_name_without_ext}.md"
         with open(extracted_md_data_path, "r", encoding="utf-8") as f:
             extracted_data = f.read()
 
@@ -102,5 +102,5 @@ def save_vector_to_store(path: str, data_path: str):
 if __name__ == "__main__":
     save_vector_to_store(
         path="../vectordb_chroma/",
-        data_path="../data/Pdf/0a29925ccc5e6299e132a73325956a3abef6dd26.pdf",
+        data_path="../../data/Pdf/2ED27NR7CISW7J4PHXXBZ6OFPVDFHMFB.pdf",
     )

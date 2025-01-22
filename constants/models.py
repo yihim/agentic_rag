@@ -1,1 +1,0 @@
-EMBEDDING_MODEL = "jinaai/jina-embeddings-v2-base-en"
