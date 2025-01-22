@@ -7,11 +7,14 @@ from agents.constants.models import (
     EMBEDDING_MODEL,
     TABLE_ORGANIZER_LLM,
     TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
+    TABLE_ORGANIZER_LLM_MAX_TOKENS
 )
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from agents.utils.models import quant_config_4_bit, set_random_seed
 from typing import Tuple
 from dotenv import load_dotenv
+import json
+import re
 import requests
 import shutil
 from huggingface_hub import login
@@ -71,13 +74,17 @@ def clean_and_organize_external_data(extracted_data_path: str):
     for data in extracted_data_list:
         if data.startswith("<html><body><table>"):
             input_ids = make_llm_input_ids(tokenizer, data)
-            generated_ids = llm.generate(**input_ids, max_new_tokens=1024)
+            generated_ids = llm.generate(**input_ids, max_new_tokens=TABLE_ORGANIZER_LLM_MAX_TOKENS)
             generated_ids = [
                 output_ids[len(input_ids):]
                 for input_ids, output_ids in zip(input_ids.input_ids, generated_ids)
             ]
             response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-            print(response)
+            json_match = re.search(r"```json(.*?)```", response, re.DOTALL)
+            if json_match:
+                llm_response = json.loads(json_match.group(1).strip())
+                # print(llm_response["table"])
+                # print(llm_response["description"])
 
 def extract_data_from_source(data_path: str):
     file_name = os.path.basename(data_path)
@@ -85,18 +92,14 @@ def extract_data_from_source(data_path: str):
     mounted_dir = "../../data_extraction/data/"
     shutil.copy(data_path, mounted_dir)
     response = requests.post("http://localhost:8000/extract", json={'file_path': f"./data/{file_name}"})
-    if response.status_code == 200:
-        extracted_md_data_path = f"../../data_extraction/tmp/md/{file_name_without_ext}.md"
-        with open(extracted_md_data_path, "r", encoding="utf-8") as f:
-            extracted_data = f.read()
-
-        print(extracted_data)
+    return response.status_code, file_name_without_ext
 
 
 def save_vector_to_store(path: str, data_path: str):
     # embedding_model = SentenceTransformer(EMBEDDING_MODEL, trust_remote_code=True, device=device)
-    extract_data_from_source(data_path)
-    # clean_and_organize_external_data(extracted_data_path)
+    response_status, file_name_without_ext = extract_data_from_source(data_path)
+    if response_status == 200:
+        clean_and_organize_external_data(f"../../data_extraction/tmp/md/{file_name_without_ext}.md")
 
 
 if __name__ == "__main__":
