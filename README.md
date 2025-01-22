@@ -1,4 +1,4 @@
-# Agentic RAG
+# Agentic RAG (Local)
 
 ## Prerequisites
 
@@ -10,22 +10,12 @@ Ensure you have the following installed on your machine:
 
 Follow these steps to set up the development environment for this project.
 
+Note: magic-pdf explicitly required transformers==4.42.4 to work and the project required an updated transformers version, hence, creating different containers with different environments.
 
-### 1. *Data Extraction (Magic-PDF)*
-
-1. Navigate to the `data_extraction` directory:
-    ```bash
-    cd ./data_extraction
-    ```
-
-2. Build and start the Docker container using `docker-compose`:
-    ```bash
-    docker-compose up --build -d mineru
-    ```
-
-3. Once the container is running, use `requests` to post with a json object containing `file_path` as the key. The extracted data will be saved in the `./data_extraction/tmp/md` folder.
-
-Note: magic-pdf explicitly required transformers==4.42.4 to work and the project required an updated transformers version to work.
+### 1. *Build and start the Docker container using `docker-compose`*
+ ```bash
+ docker-compose up --build -d
+ ```
 
 ### 2. *Create conda environment*
 ```bash
