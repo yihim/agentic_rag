@@ -7,7 +7,7 @@ AGENTIC_CHUNKER_LLM = "tiiuae/Falcon3-10B-Instruct"
 # Max Tokens Length
 TABLE_ORGANIZER_LLM_MAX_TOKENS = 1024
 VISION_LLM_MAX_TOKENS = 1024
-AGENTIC_CHUNKER_LLM_MAX_TOKENS = 1024
+AGENTIC_CHUNKER_LLM_MAX_TOKENS = 4096
 
 # Prompt templates
 TABLE_ORGANIZER_LLM_SYSTEM_PROMPT = """
@@ -41,16 +41,13 @@ Provide your response in one paragraph.
 """
 
 AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT = """
-Please decompose the following content into simple, self-contained propositions. Ensure that each proposition meets the following criteria:
+Decompose the "Content" into clear and simple propositions, ensuring they are interpretable out of context.
     1. Express a Single Fact: Each proposition should state one specific fact or claim.
     2. Be Understandable Without Context: The proposition should be self-contained, meaning it can be understood without needing additional context.
     3. Use Full Names, Not Pronouns: Avoid pronouns or ambiguous references; use full entity names.
     4. Include Relevant Dates/Qualifiers: If applicable, include necessary dates, times, and qualifiers to make the fact precise.
     5. Contain One Subject-Predicate Relationship: Focus on a single subject and its corresponding action or attribute, without conjunctions or multiple clauses.
-    6. Split compound sentence into simple sentences. Maintain the original phrasing from the input whenever possible.
-    7. For any named entity that is accompanied by additional descriptive information, separate this information into its own distinct proposition.
-    8. Decontextualize the proposition by adding necessary modifier to nouns or entire sentences and replacing pronouns (e.g., "it", "he", "she", "they", "this", "that") with the full name of the entities they refer to.
-    9. Present the results as a list of strings, formatted in JSON.
+    6. Present the results as a list of strings, formatted in JSON.
 
 Example:
 
