@@ -29,7 +29,6 @@ from typing import Tuple, Optional, Any, Dict, Union
 from dotenv import load_dotenv
 from langchain_ollama import ChatOllama
 from typing import List, Iterator
-from tqdm import tqdm
 from langchain_core.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
 from pydantic.v1 import BaseModel, Field
 from bs4 import BeautifulSoup
@@ -40,7 +39,8 @@ import shutil
 import string
 from huggingface_hub import login
 import openai
-from time import perf_counter
+from tqdm import tqdm
+from time import perf_counter, sleep
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -70,8 +70,6 @@ def load_llm(llm_name: str, vision: bool = False) -> Tuple[
 
         processor = AutoProcessor.from_pretrained(llm_name, trust_remote_code=True)
 
-        print(f"Loaded {llm_name}")
-
         return llm, processor
 
     else:
@@ -84,62 +82,161 @@ def load_llm(llm_name: str, vision: bool = False) -> Tuple[
 
         tokenizer = AutoTokenizer.from_pretrained(llm_name, trust_remote_code=True)
         tokenizer.pad_token = tokenizer.eos_token
-        tokenizer.padding_side = "right"
+        tokenizer.padding_side = "left"
 
         llm.generation_config.pad_token_id = tokenizer.pad_token_id
-
-        print(f"Loaded {llm_name}")
 
         return llm, tokenizer
 
 
-def make_llm_messages(
+def make_llm_formatted_messages(
     system_prompt: str,
     user_prompt: Dict[Any, Any],
-    image_file_path: str = None,
-    tokenizer=None,
-    processor=None,
+    tokenizer: Optional[
+        Union[AutoTokenizer.from_pretrained, AutoProcessor.from_pretrained]
+    ],
 ):
     messages = [
         {"role": "system", "content": system_prompt},
         user_prompt,
     ]
 
-    if processor is not None:
-        input_text = processor.apply_chat_template(messages, add_generation_prompt=True)
+    formatted_messages = tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True
+    )
 
-        image = Image.open(image_file_path)
-
-        inputs = processor(
-            image, input_text, add_special_tokens=False, return_tensors="pt"
-        ).to(device)
-
-        return inputs
-
-    else:
-        messages = tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        )
-
-        messages = tokenizer([messages], return_tensors="pt").to(device)
-
-        return messages
+    return formatted_messages
 
 
-def get_llm_response(llm, messages, max_tokens: int, tokenizer=None, processor=None):
-    generated_ids = llm.generate(**messages, max_new_tokens=max_tokens)
-    generated_ids = [
-        output_ids[len(input_ids) :]
-        for input_ids, output_ids in zip(messages.input_ids, generated_ids)
-    ]
+def process_data(
+    data, data_type, llm_name, system_prompt, max_tokens, batch_size, image_dir=None
+):
+    """
+    Process table, image, or text data using the specified LLM.
 
-    if processor is not None:
-        response = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+    Args:
+        data: The data to be processed (list of dictionaries).
+        data_type: Type of data ('table', 'image', or 'text').
+        llm_name: Name of the LLM to load.
+        system_prompt: System prompt for the LLM.
+        max_tokens: Maximum number of tokens for generation.
+        batch_size: Batch size for processing.
+        image_dir: Directory containing image files (required for image data).
 
-    else:
-        response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+    Returns:
+        Processed data with added or updated 'text' field.
+    """
+    llm, tokenizer = load_llm(llm_name=llm_name, vision=(data_type == "image"))
+    print(f"Loaded {llm_name}")
 
-    return response
+    batch_indices = []
+    all_tensor_messages = []
+
+    with tqdm(
+        total=len(data), desc=f"Creating {data_type} batches", unit="Item"
+    ) as pbar:
+        for i in range(0, len(data), batch_size):
+            batch = data[i : i + batch_size]
+            batch_indices.append(list(range(i, min(i + batch_size, len(data)))))
+            batch_messages = []
+
+            for item in batch:
+                if data_type == "table":
+                    user_prompt = {
+                        "role": "user",
+                        "content": f"Below is the HTML formatted table:\n{item['table']}\nPlease provide a contextualized description for it.",
+                    }
+                elif data_type == "image":
+                    user_prompt = {
+                        "role": "user",
+                        "content": [
+                            {"type": "image"},
+                            {"type": "text", "text": "Describe the image concisely."},
+                        ],
+                    }
+                elif data_type == "text":
+                    title = item["header"]
+                    text = " ".join(item["text"])
+                    context = f"Title: {title}\nContent: {text}"
+                    user_prompt = {
+                        "role": "user",
+                        "content": f"Decompose the following:\n{context}",
+                    }
+
+                batch_messages.append(
+                    make_llm_formatted_messages(
+                        system_prompt=system_prompt,
+                        user_prompt=user_prompt,
+                        tokenizer=tokenizer,
+                    )
+                )
+
+            if data_type == "image":
+                batch_images = [
+                    Image.open(os.path.join(image_dir, item["image"])) for item in batch
+                ]
+                batch_tensors = tokenizer(
+                    batch_images,
+                    batch_messages,
+                    add_special_tokens=False,
+                    return_tensors="pt",
+                ).to(device)
+            else:
+                batch_tensors = tokenizer(
+                    batch_messages, padding=True, truncation=True, return_tensors="pt"
+                ).to(device)
+
+            all_tensor_messages.append(batch_tensors)
+            pbar.update(len(batch))
+
+    total_processed = 0
+    with tqdm(
+        total=len(data), desc=f"Processing {data_type} batches", unit="Item"
+    ) as pbar:
+        for tensor_messages, indices in zip(all_tensor_messages, batch_indices):
+            if data_type == "image":
+                generated_ids = llm.generate(
+                    **tensor_messages,
+                    max_new_tokens=max_tokens,
+                )
+            else:
+                generated_ids = llm.generate(
+                    **tensor_messages,
+                    max_new_tokens=max_tokens,
+                    temperature=0,
+                )
+
+            generated_parts = []
+            for input_ids, output_ids in zip(tensor_messages.input_ids, generated_ids):
+                generated_parts.append(output_ids[input_ids.shape[0] :])
+
+            responses = tokenizer.batch_decode(
+                generated_parts, skip_special_tokens=True
+            )
+
+            for idx, response in zip(indices, responses):
+                if data_type == "table":
+                    json_match = re.search(r"```json(.*?)```", response, re.DOTALL)
+                    if json_match:
+                        extracted_response = json.loads(json_match.group(1).strip())
+                    else:
+                        extracted_response = json.loads(response)
+                elif data_type == "text":
+                    extracted_response = json.loads(response)
+                else:
+                    extracted_response = response
+
+                data[idx]["text"] = extracted_response
+
+                total_processed += 1
+                pbar.update(1)
+                pbar.set_postfix({"Processed": f"{total_processed}/{len(data)}"})
+
+    print(f"{data_type.capitalize()} data processed successfully.")
+    del llm
+    torch.cuda.empty_cache()
+
+    return data
 
 
 def clean_and_organize_external_data(file_name_without_ext: str):
@@ -262,6 +359,10 @@ def clean_and_organize_external_data(file_name_without_ext: str):
     table_data = []
     image_data = []
 
+    def extract_image_file_name(text: str) -> str:
+        match = re.search(r"/([^/]+\.[a-zA-Z0-9]+)\)", text)
+        return match.group(1)
+
     # Organize data
     for index, data in enumerate(organized_data):
         header = data["header"]
@@ -274,7 +375,9 @@ def clean_and_organize_external_data(file_name_without_ext: str):
                 if item.startswith("<html><body><table>"):
                     table_data.append({"header": header, "table": item})
                 elif item.startswith("![]"):
-                    image_data.append({"header": header, "image": item})
+                    image_data.append(
+                        {"header": header, "image": extract_image_file_name(item)}
+                    )
                 else:
                     text.append(item)
 
@@ -283,104 +386,43 @@ def clean_and_organize_external_data(file_name_without_ext: str):
 
     # Process table data
     if table_data:
-        print("Processing table data...")
-        table_organizer_llm, tokenizer = load_llm(llm_name=TABLE_ORGANIZER_LLM)
-        for index, data in enumerate(table_data):
-            user_prompt = {
-                "role": "user",
-                "content": f"Below is the HTML formatted table:\n{data['table']}\nPlease provide a contextualized description for it.",
-            }
-            messages = make_llm_messages(
-                system_prompt=TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
-                user_prompt=user_prompt,
-                tokenizer=tokenizer,
-            )
-            response = get_llm_response(
-                llm=table_organizer_llm,
-                messages=messages,
-                tokenizer=tokenizer,
-                max_tokens=TABLE_ORGANIZER_LLM_MAX_TOKENS,
-            )
-            json_match = re.search(r"```json(.*?)```", response, re.DOTALL)
-            if json_match:
-                llm_response = json.loads(json_match.group(1).strip())
-                table_data[index]["text"] = llm_response["description"]
+        table_data = process_data(
+            data=table_data,
+            data_type="table",
+            llm_name=TABLE_ORGANIZER_LLM,
+            system_prompt=TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
+            max_tokens=TABLE_ORGANIZER_LLM_MAX_TOKENS,
+            batch_size=8,
+        )
 
-        print("Table data processed successfully.")
-        del table_organizer_llm
-        torch.cuda.empty_cache()
+        print(table_data)
 
     # Process image data
     if image_data:
-        print("Processing image data...")
-        vision_llm, processor = load_llm(llm_name=VISION_LLM, vision=True)
-
-        def extract_image_file_name(text: str) -> str:
-            match = re.search(r"/([^/]+\.[a-zA-Z0-9]+)\)", text)
-            return match.group(1)
-
-        for index, data in enumerate(image_data):
-            image_file_name = extract_image_file_name(data["image"])
-            image_file_path = os.path.join(
-                image_dir, file_name_without_ext, image_file_name
-            )
-            user_prompt = {
-                "role": "user",
-                "content": [
-                    {"type": "image"},
-                    {"type": "text", "text": "Describe the image concisely."},
-                ],
-            }
-            inputs = make_llm_messages(
-                system_prompt=VISION_LLM_SYSTEM_PROMPT,
-                user_prompt=user_prompt,
-                image_file_path=image_file_path,
-                processor=processor,
-            )
-            response = get_llm_response(
-                llm=vision_llm,
-                messages=inputs,
-                processor=processor,
-                max_tokens=VISION_LLM_MAX_TOKENS,
-            )
-            image_data[index]["text"] = response
-            image_data[index]["image"] = image_file_name
-
-        print("Image data processed successfully.")
-        del vision_llm
-        torch.cuda.empty_cache()
+        image_dir = os.path.join(image_dir, file_name_without_ext)
+        image_data = process_data(
+            data=image_data,
+            data_type="image",
+            llm_name=VISION_LLM,
+            system_prompt=VISION_LLM_SYSTEM_PROMPT,
+            max_tokens=VISION_LLM_MAX_TOKENS,
+            batch_size=4,
+            image_dir=image_dir,
+        )
+        print(image_data)
 
     # Process text data
     if text_data:
-        print("Processing text data...")
-        agentic_chunker_llm, tokenizer = load_llm(llm_name=AGENTIC_CHUNKER_LLM)
+        text_data = process_data(
+            data=text_data,
+            data_type="text",
+            llm_name=AGENTIC_CHUNKER_LLM,
+            system_prompt=AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
+            max_tokens=AGENTIC_CHUNKER_LLM_MAX_TOKENS,
+            batch_size=12,
+        )
 
-        for index, item in enumerate(text_data):
-            title = item["header"]
-            text = " ".join(item["text"])
-
-            context = f"Title:{title}\nContent:{text}"
-            user_prompt = {
-                "role": "user",
-                "content": f"Decompose the following:\n{context}",
-            }
-            messages = make_llm_messages(
-                system_prompt=AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
-                user_prompt=user_prompt,
-                tokenizer=tokenizer,
-            )
-            response = get_llm_response(
-                llm=agentic_chunker_llm,
-                messages=messages,
-                tokenizer=tokenizer,
-                max_tokens=AGENTIC_CHUNKER_LLM_MAX_TOKENS,
-            )
-
-            text_data[index]["text"] = response
-
-        print("Text data processed successfully.")
-        del agentic_chunker_llm
-        torch.cuda.empty_cache()
+        print(text_data)
 
 
 def extract_data_from_source(data_path: str):
@@ -402,11 +444,16 @@ def save_vector_to_store(path: str, data_path: str):
         print("Data extraction completed successfully.")
         clean_and_organize_external_data(file_name_without_ext)
 
-    # clean_and_organize_external_data("2A2C2V4WI5YRDJHR26XUD4IAULIYGTMA")
+    # clean_and_organize_external_data("2a85b52768ea5761b773be49b09d15f0b95415b0")
 
 
 if __name__ == "__main__":
+
+    start = perf_counter()
+
     save_vector_to_store(
         path="../vectordb_chroma/",
-        data_path="../../data/Pdf/2A2C2V4WI5YRDJHR26XUD4IAULIYGTMA.pdf",
+        data_path="../../data/Pdf/2a85b52768ea5761b773be49b09d15f0b95415b0.pdf",
     )
+
+    print(f"Total execution time: {perf_counter() - start:.2f} seconds.")
