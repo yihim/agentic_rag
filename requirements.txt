@@ -1,9 +1,9 @@
 black==24.10.0
 chroma==0.2.0
 chromadb==0.6.3
-crawl4ai==0.3.731
+crawl4ai==0.4.247
 fastapi==0.115.6
-gradio==5.9.1
+gradio==3.36.1
 ollama==0.4.6
 langchain==0.3.14
 langchain-community==0.3.14
@@ -15,3 +15,4 @@ sentence-transformers==3.3.1
 transformers==4.47.1
 huggingface_hub==0.27.1
 bitsandbytes==0.45.0
+duckduckgo-search==7.3.2
