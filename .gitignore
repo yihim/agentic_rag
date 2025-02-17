@@ -3,3 +3,7 @@ __pycache__
 .ipynb
 .gradio
 .env
+data
+tmp
+vectordb_chroma
+*txt
