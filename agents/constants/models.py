@@ -1,12 +1,9 @@
 # Model names
-EMBEDDING_MODEL = "jinaai/jina-embeddings-v3"
-TABLE_ORGANIZER_LLM = "tiiuae/Falcon3-10B-Instruct"
-VISION_LLM = "meta-llama/Llama-3.2-11B-Vision-Instruct"
-AGENTIC_CHUNKER_LLM = "tiiuae/Falcon3-10B-Instruct"
+EMBEDDING_MODEL = "nomic-ai/nomic-embed-text-v1.5"
+FALCON3_10B_INSTRUCT = "tiiuae/Falcon3-10B-Instruct"
 
 # Max Tokens Length
 TABLE_ORGANIZER_LLM_MAX_TOKENS = 1024
-VISION_LLM_MAX_TOKENS = 1024
 AGENTIC_CHUNKER_LLM_MAX_TOKENS = 4096
 
 # Prompt templates
@@ -30,14 +27,6 @@ Output Example:
 {
   "description": "Precise narrative explaining the table's content and significance"
 }
-"""
-
-VISION_LLM_SYSTEM_PROMPT = """
-You are a vision-language model tasked with analyzing images. 
-Your role is to provide concise, clear, and accurate descriptions of the content within an image. 
-Focus on identifying the primary subject, key details, and overall context, while avoiding unnecessary speculation or overly detailed observations. 
-Be objective and neutral in your descriptions.
-Provide your response in one paragraph.
 """
 
 AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT = """
