@@ -4,7 +4,7 @@ from langchain.schema import Document
 import os
 from agents.constants.models import (
     EMBEDDING_MODEL,
-    FALCON3_10B_INSTRUCT,
+    FALCON3,
     TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
     TABLE_ORGANIZER_LLM_MAX_TOKENS,
     AGENTIC_CHUNKER_LLM_MAX_TOKENS,
@@ -152,16 +152,19 @@ def clean_and_organize_external_data(
 
     cleaned_references = clean_references(extracted_data)
 
-    organized_data = clean_text_to_json(cleaned_references)
+    cleaned_data = clean_text_to_json(cleaned_references)
 
     print("Cleaning completed.")
 
     text_data = []
     table_data = []
-    organized_all_data = []
+    organized_data = []
 
-    # Organize data
-    for index, data in enumerate(organized_data):
+    print(f"Cleaned data:\n{cleaned_data}")
+    print("Organizing cleaned data with LLM...")
+
+    # Organize data for llm
+    for index, data in enumerate(cleaned_data):
         header = data["header"]
         content = data["content"].split("\n")
 
@@ -192,7 +195,7 @@ def clean_and_organize_external_data(
 
         # print(table_data)
 
-        organized_all_data.extend(table_data)
+        organized_data.extend(table_data)
 
     # Process text data
     if text_data:
@@ -202,14 +205,17 @@ def clean_and_organize_external_data(
             llm_and_tokenizer=llm_and_tokenizer,
             system_prompt=AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
             max_tokens=AGENTIC_CHUNKER_LLM_MAX_TOKENS,
-            batch_size=12,
+            batch_size=8,
         )
 
         # print(text_data)
 
-        organized_all_data.extend(text_data)
+        organized_data.extend(text_data)
 
-    return organized_all_data
+    print("Organizing completed.")
+    print(f"Organized data:\n{organized_data}")
+
+    return organized_data
 
 
 def extract_data_from_source(data_path: str):
@@ -235,19 +241,20 @@ def save_data_to_vectorstore(
     response_status, file_name_without_ext = extract_data_from_source(data_path)
     if response_status == 200:
         print("Data extraction completed successfully.")
-        organized_all_data = clean_and_organize_external_data(
+        organized_data = clean_and_organize_external_data(
             llm_and_tokenizer, file_name_without_ext
         )
-        print("All data processed successfully.")
+
+        print("Saving organized data into Chroma vector store...")
 
         docs = []
 
         with tqdm(
-            total=len(organized_all_data),
+            total=len(organized_data),
             desc="Creating documents for vector store.",
             unit="Data",
         ) as pbar:
-            for item in organized_all_data:
+            for item in organized_data:
                 header = (
                     f"Header: {item['header'].capitalize()}\n"
                     if item["header"] != "None"
@@ -280,7 +287,7 @@ def save_data_to_vectorstore(
             collection_metadata={"hnsw:space": "cosine"},
         )
 
-        print("Saved documents in Chroma vector store.")
+        print("Saved documents into Chroma vector store.")
 
     else:
         print("Unexpected error occurred in data extraction process.")
@@ -309,7 +316,7 @@ def load_data_from_vectorstore(
 
 
 if __name__ == "__main__":
-    llm_and_tokenizer = load_llm_and_tokenizer(llm_name=FALCON3_10B_INSTRUCT, device=device)
+    llm_and_tokenizer = load_llm_and_tokenizer(llm_name=FALCON3, device=device)
 
     embedding_model = HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL,
@@ -334,7 +341,7 @@ if __name__ == "__main__":
         embedding_model=embedding_model, vectordb_path=vectordb_path
     )
 
-    query = "who reviewed the study?"
+    query = "what are the future work to make use of conflict prediction for anticipatory action in the humanitarian sector?"
 
     retrieved_docs = retriever.get_relevant_documents(query)
     print(retrieved_docs)

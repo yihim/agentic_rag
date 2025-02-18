@@ -1,9 +1,9 @@
 # Model names
 EMBEDDING_MODEL = "nomic-ai/nomic-embed-text-v1.5"
-FALCON3_10B_INSTRUCT = "tiiuae/Falcon3-10B-Instruct"
+FALCON3 = "tiiuae/Falcon3-10B-Instruct"
 
 # Max Tokens Length
-TABLE_ORGANIZER_LLM_MAX_TOKENS = 1024
+TABLE_ORGANIZER_LLM_MAX_TOKENS = 4096
 AGENTIC_CHUNKER_LLM_MAX_TOKENS = 4096
 
 # Prompt templates
@@ -20,6 +20,7 @@ Key Analysis Dimensions:
 
 Output Requirements:
 - Strictly use the JSON format
+- Do not include the JSON schema
 - Focus on meaningful, contextual description
 - Be precise and informative
 
@@ -36,7 +37,7 @@ Decompose the "Content" into clear and simple propositions, ensuring they are in
     3. Use Full Names, Not Pronouns: Avoid pronouns or ambiguous references; use full entity names.
     4. Include Relevant Dates/Qualifiers: If applicable, include necessary dates, times, and qualifiers to make the fact precise.
     5. Contain One Subject-Predicate Relationship: Focus on a single subject and its corresponding action or attribute, without conjunctions or multiple clauses.
-    6. Present the results as a list of strings, formatted in JSON.
+    6. Present the results as only a list of strings, formatted in JSON.
 
 Example:
 

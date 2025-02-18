@@ -46,10 +46,14 @@ def load_llm_and_tokenizer(llm_name: str, device: str) -> Tuple[
         torch_dtype=torch.bfloat16,
     )
 
+    print(f"LLM in memory: {llm.get_memory_footprint() / 1e9:.2f} GB")
+
     tokenizer = AutoTokenizer.from_pretrained(llm_name, trust_remote_code=True)
     tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "left"
 
     llm.generation_config.pad_token_id = tokenizer.pad_token_id
+
+    print(f"Loaded {llm_name}")
 
     return llm, tokenizer
