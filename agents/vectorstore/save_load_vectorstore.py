@@ -310,7 +310,8 @@ def load_data_from_vectorstore(
         total_documents = vectorstore._collection.count()
 
         return vectorstore.as_retriever(
-            search_type="similarity", search_kwargs={"k": int(total_documents * 0.1)}
+            search_type="similarity_score_threshold",
+            search_kwargs={"k": int(total_documents * 0.1), "score_threshold": 0.5},
         )
 
     else:
@@ -345,7 +346,7 @@ if __name__ == "__main__":
         embedding_model=embedding_model, vectordb_path=vectordb_path
     )
 
-    query = "what are the future work to make use of conflict prediction for anticipatory action in the humanitarian sector?"
+    query = "what is nvidia?"
 
     retrieved_docs = retriever.get_relevant_documents(query)
     print(retrieved_docs)
