@@ -104,7 +104,7 @@ def process_data(
             generated_ids = llm.generate(
                 **tensor_messages,
                 max_new_tokens=max_tokens,
-                temperature=0,
+                temperature=0.001,
             )
 
             generated_parts = []
