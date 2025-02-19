@@ -5,6 +5,7 @@ import os
 from agents.constants.models import (
     EMBEDDING_MODEL,
     FALCON3,
+    QWEN,
     TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
     TABLE_ORGANIZER_LLM_MAX_TOKENS,
     AGENTIC_CHUNKER_LLM_MAX_TOKENS,
@@ -190,7 +191,7 @@ def clean_and_organize_external_data(
             llm_and_tokenizer=llm_and_tokenizer,
             system_prompt=TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
             max_tokens=TABLE_ORGANIZER_LLM_MAX_TOKENS,
-            batch_size=8,
+            batch_size=4,
         )
 
         # print(table_data)
@@ -205,7 +206,7 @@ def clean_and_organize_external_data(
             llm_and_tokenizer=llm_and_tokenizer,
             system_prompt=AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
             max_tokens=AGENTIC_CHUNKER_LLM_MAX_TOKENS,
-            batch_size=8,
+            batch_size=4,
         )
 
         # print(text_data)
@@ -306,8 +307,10 @@ def load_data_from_vectorstore(
 
         print("Loaded Chroma vector store.")
 
+        total_documents = vectorstore._collection.count()
+
         return vectorstore.as_retriever(
-            search_type="similarity", search_kwargs={"k": 4}
+            search_type="similarity", search_kwargs={"k": int(total_documents * 0.1)}
         )
 
     else:
@@ -316,7 +319,8 @@ def load_data_from_vectorstore(
 
 
 if __name__ == "__main__":
-    llm_and_tokenizer = load_llm_and_tokenizer(llm_name=FALCON3, device=device)
+    # Testing
+    llm_and_tokenizer = load_llm_and_tokenizer(llm_name=QWEN, device=device)
 
     embedding_model = HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL,
