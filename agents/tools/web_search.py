@@ -54,7 +54,7 @@ web_search_tool = [
     StructuredTool.from_function(
         func=tavily_search,
         name="Tavily search",
-        description="A tool for retrieving relevant information when the LLM requires external knowledge beyond its available sources.",
+        description="Use this tool to perform real-time web searches when you need external information that is not available in the local knowledge base.",
         args_schema=TavilySearchInput,
         return_direct=True,
     )
