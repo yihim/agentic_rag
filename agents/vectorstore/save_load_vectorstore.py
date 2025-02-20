@@ -16,7 +16,7 @@ from transformers import (
     AutoTokenizer,
 )
 from agents.utils.models import load_llm_and_tokenizer, set_random_seed
-from typing import Tuple
+from typing import Tuple, Optional
 import re
 import requests
 from tqdm import tqdm
@@ -24,7 +24,9 @@ import torch
 import shutil
 import string
 from time import perf_counter
-from llm_preprocess_data import process_data
+from llm_preprocess_data import hf_process_data
+from vllm_preprocess_data import vllm_process_data
+import asyncio
 from dotenv import load_dotenv
 from huggingface_hub import login
 import warnings
@@ -38,10 +40,10 @@ set_random_seed(42)
 
 
 def clean_and_organize_external_data(
-    llm_and_tokenizer: Tuple[
-        AutoModelForCausalLM.from_pretrained, AutoTokenizer.from_pretrained
-    ],
     file_name_without_ext: str,
+    llm_and_tokenizer: Optional[
+        Tuple[AutoModelForCausalLM.from_pretrained, AutoTokenizer.from_pretrained]
+    ] = None,
 ):
 
     md_dir = "../../data_extraction/tmp/md/"
@@ -185,14 +187,27 @@ def clean_and_organize_external_data(
 
     # Process table data
     if table_data:
-        table_data = process_data(
-            data=table_data,
-            data_type="table",
-            llm_and_tokenizer=llm_and_tokenizer,
-            system_prompt=TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
-            max_tokens=TABLE_ORGANIZER_LLM_MAX_TOKENS,
-            batch_size=4,
-        )
+
+        if llm_and_tokenizer is None:
+            # Using VLLM llm to process data
+            table_data = asyncio.run(
+                vllm_process_data(
+                    data=table_data,
+                    data_type="table",
+                    system_prompt=TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
+                    max_tokens=TABLE_ORGANIZER_LLM_MAX_TOKENS,
+                )
+            )
+        else:
+            # Using HF llm to process data
+            table_data = hf_process_data(
+                data=table_data,
+                data_type="table",
+                llm_and_tokenizer=llm_and_tokenizer,
+                system_prompt=TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
+                max_tokens=TABLE_ORGANIZER_LLM_MAX_TOKENS,
+                batch_size=4,
+            )
 
         # print(table_data)
 
@@ -200,14 +215,27 @@ def clean_and_organize_external_data(
 
     # Process text data
     if text_data:
-        text_data = process_data(
-            data=text_data,
-            data_type="text",
-            llm_and_tokenizer=llm_and_tokenizer,
-            system_prompt=AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
-            max_tokens=AGENTIC_CHUNKER_LLM_MAX_TOKENS,
-            batch_size=4,
-        )
+
+        if llm_and_tokenizer is None:
+            # Using VLLM llm to process data
+            text_data = asyncio.run(
+                vllm_process_data(
+                    data=text_data,
+                    data_type="text",
+                    system_prompt=AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
+                    max_tokens=AGENTIC_CHUNKER_LLM_MAX_TOKENS,
+                )
+            )
+        else:
+            # Using HF llm to process data
+            text_data = hf_process_data(
+                data=text_data,
+                data_type="text",
+                llm_and_tokenizer=llm_and_tokenizer,
+                system_prompt=AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
+                max_tokens=AGENTIC_CHUNKER_LLM_MAX_TOKENS,
+                batch_size=4,
+            )
 
         # print(text_data)
 
@@ -232,18 +260,18 @@ def extract_data_from_source(data_path: str):
 
 
 def save_data_to_vectorstore(
-    llm_and_tokenizer: Tuple[
-        AutoModelForCausalLM.from_pretrained, AutoTokenizer.from_pretrained
-    ],
     embedding_model: HuggingFaceEmbeddings,
     vectordb_path: str,
     data_path: str,
+    llm_and_tokenizer: Optional[
+        Tuple[AutoModelForCausalLM.from_pretrained, AutoTokenizer.from_pretrained]
+    ] = None,
 ):
     response_status, file_name_without_ext = extract_data_from_source(data_path)
     if response_status == 200:
         print("Data extraction completed successfully.")
         organized_data = clean_and_organize_external_data(
-            llm_and_tokenizer, file_name_without_ext
+            file_name_without_ext, llm_and_tokenizer
         )
 
         print("Saving organized data into Chroma vector store...")
@@ -321,7 +349,6 @@ def load_data_from_vectorstore(
 
 if __name__ == "__main__":
     # Testing
-    llm_and_tokenizer = load_llm_and_tokenizer(llm_name=QWEN, device=device)
 
     embedding_model = HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL,
@@ -331,16 +358,32 @@ if __name__ == "__main__":
 
     vectordb_path = "../vectordb_chroma/"
 
-    start = perf_counter()
+    # Choose mode: hf / vllm
+    process_mode = "vllm"
 
-    save_data_to_vectorstore(
-        llm_and_tokenizer=llm_and_tokenizer,
-        embedding_model=embedding_model,
-        vectordb_path=vectordb_path,
-        data_path="../../data/Pdf/2a85b52768ea5761b773be49b09d15f0b95415b0.pdf",
-    )
+    if process_mode == "hf":
+        llm_and_tokenizer = load_llm_and_tokenizer(llm_name=QWEN, device=device)
 
-    print(f"Total execution time: {perf_counter() - start:.2f} seconds.")
+        start = perf_counter()
+
+        save_data_to_vectorstore(
+            llm_and_tokenizer=llm_and_tokenizer,
+            embedding_model=embedding_model,
+            vectordb_path=vectordb_path,
+            data_path="../../data/Pdf/2a85b52768ea5761b773be49b09d15f0b95415b0.pdf",
+        )
+
+        print(f"Total execution time: {perf_counter() - start:.2f} seconds.")
+    else:
+        start = perf_counter()
+
+        save_data_to_vectorstore(
+            embedding_model=embedding_model,
+            vectordb_path=vectordb_path,
+            data_path="../../data/Pdf/2a85b52768ea5761b773be49b09d15f0b95415b0.pdf",
+        )
+
+        print(f"Total execution time: {perf_counter() - start:.2f} seconds.")
 
     retriever = load_data_from_vectorstore(
         embedding_model=embedding_model, vectordb_path=vectordb_path

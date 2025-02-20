@@ -4,8 +4,8 @@ FALCON3 = "tiiuae/Falcon3-10B-Instruct"
 QWEN = "Qwen/Qwen2.5-14B-Instruct"
 
 # Max Tokens Length
-TABLE_ORGANIZER_LLM_MAX_TOKENS = 4096
-AGENTIC_CHUNKER_LLM_MAX_TOKENS = 4096
+TABLE_ORGANIZER_LLM_MAX_TOKENS = 3072
+AGENTIC_CHUNKER_LLM_MAX_TOKENS = 3072
 
 # Prompt templates
 TABLE_ORGANIZER_LLM_SYSTEM_PROMPT = """
@@ -56,4 +56,16 @@ In the nineteenth century, these factors made the Easter Hare/Rabbit popular thr
 
 Output: 
 ["The earliest evidence for the Easter Hare was recorded in south-west Germany in 1678 by Georg Franck von Franckenau.", "Georg Franck von Franckenau was a professor of medicine.", "The evidence for the Easter Hare remained unknown in other parts of Germany until the 18th century.", "Richard Sermon was a scholar.", "Richard Sermon writes a hypothesis about the possible explanation for the connection between hares and the tradition during Easter.", "Hares were frequently seen in gardens in spring.", "Hares may have served as a convenient explanation for the origin of the colored eggs hidden in gardens for children.", "There is a European tradition that hares laid eggs.", "A hare’s scratch or form and a lapwing’s nest look very similar.", "Both hares and lapwing’s nests occur on grassland and are first seen in the spring.", "In the nineteenth century, the popularity of the Easter Hare/Rabbit was influenced by Easter cards, toys, and books.", "German immigrants exported the custom of the Easter Hare/Rabbit to Britain and America.", "The custom of the Easter Hare/Rabbit evolved into the Easter Bunny in Britain and America."]
+"""
+
+AGENT_ROUTER_SYSTEM_PROMPT = """
+
+"""
+
+QUERY_REWRITER_SYSTEM_PROMPT = """
+
+"""
+
+RESPONSE_CHECKER_SYSTEM_PROMPT = """
+
 """

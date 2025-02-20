@@ -28,7 +28,7 @@ def make_llm_formatted_messages(
     return formatted_messages
 
 
-def process_data(
+def hf_process_data(
     data: List[Dict[str, str]],
     data_type: str,
     llm_and_tokenizer: Tuple[
