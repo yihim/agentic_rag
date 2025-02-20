@@ -11,7 +11,6 @@ from agents.constants.models import (
     AGENTIC_CHUNKER_LLM_MAX_TOKENS,
 )
 import pprint
-import re
 import json
 from tqdm import tqdm
 
@@ -27,7 +26,7 @@ HEADERS = {
 REQUEST_PAYLOAD_TEMPLATE = {
     "model": "/model",
     "seed": 42,
-    "temperature": 0.001,
+    "temperature": 0.01,
     "top_p": 0.8,
     "repetition_penalty": 1,
     "presence_penalty": 0,
@@ -61,6 +60,12 @@ async def vllm_process_data(
             payload = REQUEST_PAYLOAD_TEMPLATE.copy()
             payload["max_tokens"] = max_tokens
             payload["messages"] = messages
+            payload["guided_json"] = {
+                "type": "object",
+                "properties": {"description": {"type": "string"}},
+                "required": ["description"],
+                "additionalProperties": False,
+            }
 
             request_payloads.append(payload)
     else:
@@ -72,13 +77,14 @@ async def vllm_process_data(
                 {"role": "system", "content": system_prompt},
                 {
                     "role": "user",
-                    "content": f"Decompose the following:\n{context}\n\nPlease provide your response solely in a single JSON formatted list of strings.",
+                    "content": f"Decompose the following:\n{context}",
                 },
             ]
 
             payload = REQUEST_PAYLOAD_TEMPLATE.copy()
             payload["max_tokens"] = max_tokens
             payload["messages"] = messages
+            payload["guided_json"] = {"type": "array", "items": {"type": "string"}}
 
             request_payloads.append(payload)
 
@@ -94,14 +100,8 @@ async def vllm_process_data(
         for idx, result in enumerate(results):
             # print(f"Result of {idx}: {result}")
             if result:
-                json_match = re.search(r"```json(.*?)```", result, re.DOTALL)
                 if data_type == "table":
-                    if json_match:
-                        extracted_response = json.loads(json_match.group(1).strip())[
-                            "description"
-                        ]
-                    else:
-                        extracted_response = json.loads(result)["description"]
+                    extracted_response = json.loads(result)["description"]
                 else:
                     extracted_response = json.loads(result)
 
