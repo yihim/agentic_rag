@@ -23,10 +23,10 @@ docker pull vllm/vllm-openai
 ```
 
 ### 3. *Create a .env file containing:*
-1. HF_TOKEN_WRITE
-2. HF_TOKEN_READ
-3. TAVILY_API_KEY
-4. VLLM_API_KEY
+1. HF_TOKEN_WRITE - Create write access huggingface token at [here](https://huggingface.co/security-checkup?next=%2Fsettings%2Ftokens)
+2. HF_TOKEN_READ - Create read access huggingface token at [here](https://huggingface.co/security-checkup?next=%2Fsettings%2Ftokens)
+3. TAVILY_API_KEY - Get your api key at [here](https://tavily.com/)
+4. VLLM_API_KEY - Define when building the container at *Step 5*
 
 ### 4. *Download model from huggingface*
 ```bash
