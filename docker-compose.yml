@@ -1,6 +1,10 @@
+version: "3.8"
+
 services:
   mineru:
-    build: ./data_extraction/mineru
+    build:
+      context: ./data_extraction/mineru
+      dockerfile: Dockerfile.mineru
     ports:
       - "8000:8000"
     volumes:
@@ -18,6 +22,38 @@ services:
               capabilities: [gpu]
     environment:
       - HOST_IP=host.docker.internal
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  vllm:
+    image: vllm/vllm-openai:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - "C:\\Users\\PC\\.cache\\huggingface\\hub\\models--unsloth--Qwen2.5-14B-Instruct-bnb-4bit\\snapshots\\f010a5cd44911b4fff441fcfa67200643ed811c4:/model"
+    ipc: host
+    networks:
+      - pc_network
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - VLLM_ATTENTION_BACKEND=FLASHINFER
+    command: >
+      --model "/model"
+      --max-num-seqs 8
+      --seed 42
+      --max-model-len 6144
+      --port 8080
+      --quantization bitsandbytes
+      --load-format bitsandbytes
+      --api-key vllm
+      --dtype bfloat16
+      --kv-cache-dtype fp8_e4m3
 
 networks:
   pc_network:
