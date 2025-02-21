@@ -40,7 +40,7 @@ python download_huggingface_model.py
 ```
 
 ### 6. *Configure docker-compose.yml file for vLLM parameters*
-- **--volumes:** Change the path to the downloaded model directory that contains config.json
+- **volumes:** Change the path to the downloaded model directory that contains config.json
 - **--api-key:** Change it according to the *VLLM_API_KEY* defined in *Step 4*
 
 ### 7. *Build and start the Docker container using `docker-compose`*
