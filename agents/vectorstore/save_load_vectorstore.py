@@ -349,7 +349,6 @@ def load_data_from_vectorstore(
 
 if __name__ == "__main__":
     # Testing
-
     embedding_model = HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL,
         model_kwargs={"device": device, "trust_remote_code": True},

@@ -24,6 +24,7 @@ retriever_tool = [
 ]
 
 if __name__ == "__main__":
+    # Testing
     retriever = load_data_from_vectorstore(
         embedding_model=embedding_model, vectordb_path=vectordb_path
     )
