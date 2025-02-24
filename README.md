@@ -43,9 +43,15 @@ python download_huggingface_model.py
 - **volumes:** Change the path to the downloaded model directory that contains config.json
 - **--api-key:** Change it according to the *VLLM_API_KEY* defined in *Step 4*
 
-### 7. *Build and start the Docker container using `docker-compose`*
- ```bash
+### 7. *Build and start the Docker containers using `docker-compose` file*
+1. *Ensure is in root directory to build for the main project*
+```bash
  docker-compose up --build -d
+ ```
+2. *Change directory to milvus to build for the vector store as well*
+```bash
+  cd milvus
+  docker-compose up --build -d
  ```
 
 ### 8. *Clear cache after everything installed successfully*
