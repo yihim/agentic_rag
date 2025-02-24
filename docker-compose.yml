@@ -8,8 +8,6 @@ services:
     volumes:
       - "./data_extraction/tmp:/app/tmp"
       - "./data_extraction/data:/app/data"
-    networks:
-      - pc_network
     runtime: nvidia
     deploy:
       resources:
@@ -29,8 +27,6 @@ services:
     volumes:
       - "C:\\Users\\PC\\.cache\\huggingface\\hub\\models--unsloth--Qwen2.5-14B-Instruct-bnb-4bit\\snapshots\\f010a5cd44911b4fff441fcfa67200643ed811c4:/model"
     ipc: host
-    networks:
-      - pc_network
     runtime: nvidia
     deploy:
       resources:
@@ -51,5 +47,5 @@ services:
       --dtype bfloat16
 
 networks:
-  pc_network:
-    driver: bridge
+  default:
+    name: agentic-rag
