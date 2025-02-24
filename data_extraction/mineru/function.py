@@ -7,20 +7,6 @@ import os
 import logging
 import torch
 import gc
-import sys
-import warnings
-
-warnings.filterwarnings("ignore")
-
-# Configure root logger if not already configured
-if not logging.getLogger().handlers:
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.StreamHandler(sys.stdout)
-        ]
-    )
 
 # Get logger for this module
 logger = logging.getLogger(__name__)
