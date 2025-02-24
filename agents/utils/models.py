@@ -2,11 +2,13 @@ import random
 import numpy as np
 import torch
 from transformers import BitsAndBytesConfig
+from sentence_transformers import SentenceTransformer
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
 )
-from typing import Tuple
+from typing import Tuple, List
+
 
 # Reproducibility
 def set_random_seed(seed: int):
@@ -18,21 +20,26 @@ def set_random_seed(seed: int):
         torch.backends.cudnn.deterministic = False
         torch.backends.cudnn.benchmark = True
 
+
 # 4 Bit quantization
 def quant_config_4_bit():
     return BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_use_double_quant=True,
         bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16
+        bnb_4bit_compute_dtype=torch.bfloat16,
     )
+
 
 # 8 Bit quantization
 def quant_config_8_bit():
-    return BitsAndBytesConfig(
-        load_in_8bit=True,
-        bnb_8bit_compute_dtype=torch.bfloat16
-    )
+    return BitsAndBytesConfig(load_in_8bit=True, bnb_8bit_compute_dtype=torch.bfloat16)
+
+
+# Embed data for vector store and query
+def embed_text(embedding_model: SentenceTransformer, data: List[str]):
+    return embedding_model.encode(data, normalize_embeddings=True).tolist()
+
 
 # Load llm and tokenizer
 def load_llm_and_tokenizer(llm_name: str, device: str) -> Tuple[
