@@ -5,5 +5,5 @@ __pycache__
 .env
 data
 tmp
-vectordb_chroma
+volumes
 notes
