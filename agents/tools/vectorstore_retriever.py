@@ -1,36 +1,47 @@
-from agents.vectorstore.save_load_vectorstore import load_data_from_vectorstore
-from langchain_huggingface import HuggingFaceEmbeddings
+from pymilvus import MilvusClient
+from agents.constants.vectorstore import MILVIUS_ENDPOINT, MILVIUS_PDF_COLLECTION_NAME
+from sentence_transformers import SentenceTransformer
 from agents.constants.models import EMBEDDING_MODEL
 import torch
-from langchain.tools.retriever import create_retriever_tool
+from agents.utils.models import embed_text
+from pprint import pprint
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-vectordb_path = "../vectordb_chroma"
 
-embedding_model = HuggingFaceEmbeddings(
-    model_name=EMBEDDING_MODEL,
-    model_kwargs={"device": device, "trust_remote_code": True},
-    encode_kwargs={"normalize_embeddings": True},
+milvus_client = MilvusClient(uri=MILVIUS_ENDPOINT)
+milvus_client.flush(collection_name=MILVIUS_PDF_COLLECTION_NAME)
+
+embedding_model = SentenceTransformer(
+    model_name_or_path=EMBEDDING_MODEL, device=device, trust_remote_code=True
 )
 
-retriever_tool = [
-    create_retriever_tool(
-        retriever=load_data_from_vectorstore(
-            embedding_model=embedding_model, vectordb_path=vectordb_path
-        ),
-        name="Chroma Retriever",
-        description="Use this tool to search and retrieve relevant information from the local knowledge base.",
-    )
-]
 
 if __name__ == "__main__":
-    # Testing
-    retriever = load_data_from_vectorstore(
-        embedding_model=embedding_model, vectordb_path=vectordb_path
+    # Test search vector store
+    total_data_stored = milvus_client.get_collection_stats(
+        collection_name=MILVIUS_PDF_COLLECTION_NAME
+    )["row_count"]
+    print(
+        f"Total data stored for collection_name - {MILVIUS_PDF_COLLECTION_NAME} is {total_data_stored}."
     )
 
-    query = "what is nvidia?"
+    query = "what is this document about?"
 
-    retrieved_docs = retriever.get_relevant_documents(query)
-    print(retrieved_docs)
-    print(len(retrieved_docs))
+    search_result = milvus_client.search(
+        collection_name=MILVIUS_PDF_COLLECTION_NAME,
+        data=embed_text(embedding_model=embedding_model, data=[query]),
+        limit=int(0.1 * total_data_stored),
+        search_params={"metric_type": "IP", "params": {}},
+        output_fields=["text"],
+    )
+    res_with_distance = [
+        (res["entity"]["text"], res["distance"])
+        for res in search_result[0]
+        if res["distance"] > 0.5
+    ]
+    if res_with_distance:
+        pprint(
+            f"{len(res_with_distance)} results found for query: {query}\n{res_with_distance}"
+        )
+    else:
+        pprint(f"No results found for query: {query}.")
