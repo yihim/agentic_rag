@@ -17,3 +17,4 @@ huggingface_hub==0.27.1
 bitsandbytes==0.45.0
 tavily-python==0.5.1
 python-dotenv==1.0.1
+pymilvus==2.5.4
