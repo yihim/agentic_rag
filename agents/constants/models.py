@@ -1,6 +1,5 @@
 # Model names
 EMBEDDING_MODEL = "nomic-ai/nomic-embed-text-v1.5"
-FALCON3 = "tiiuae/Falcon3-10B-Instruct"
 QWEN = "Qwen/Qwen2.5-14B-Instruct"
 
 # Max Tokens Length
