@@ -1,22 +1,19 @@
-from langchain_community.vectorstores import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.schema import Document
 import os
 from agents.constants.models import (
     EMBEDDING_MODEL,
-    FALCON3,
     QWEN,
     TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
     TABLE_ORGANIZER_LLM_MAX_TOKENS,
     AGENTIC_CHUNKER_LLM_MAX_TOKENS,
     AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
 )
+from agents.constants.vectorstore import MILVIUS_ENDPOINT, MILVIUS_PDF_COLLECTION_NAME
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
 )
-from agents.utils.models import load_llm_and_tokenizer, set_random_seed
-from typing import Tuple, Optional
+from agents.utils.models import load_llm_and_tokenizer, set_random_seed, embed_text
+from typing import Tuple, Optional, List
 import re
 import requests
 from tqdm import tqdm
@@ -29,10 +26,13 @@ from vllm_preprocess_data import vllm_process_data
 import asyncio
 from dotenv import load_dotenv
 from huggingface_hub import login
+from sentence_transformers import SentenceTransformer
+from pymilvus import MilvusClient
 import warnings
 
 warnings.filterwarnings("ignore")
 
+milvus_client = MilvusClient(uri=MILVIUS_ENDPOINT)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 load_dotenv()
 login(os.getenv("HF_TOKEN_WRITE"), add_to_git_credential=True)
@@ -260,8 +260,7 @@ def extract_data_from_source(data_path: str):
 
 
 def save_data_to_vectorstore(
-    embedding_model: HuggingFaceEmbeddings,
-    vectordb_path: str,
+    embedding_model: SentenceTransformer,
     data_path: str,
     llm_and_tokenizer: Optional[
         Tuple[AutoModelForCausalLM.from_pretrained, AutoTokenizer.from_pretrained]
@@ -274,7 +273,7 @@ def save_data_to_vectorstore(
             file_name_without_ext, llm_and_tokenizer
         )
 
-        print("Saving organized data into Chroma vector store...")
+        print("Preparing data for milvus vector store...")
 
         docs = []
 
@@ -294,68 +293,52 @@ def save_data_to_vectorstore(
                     page_content = (
                         f"{header}Table: {item['table']}\nText: {item['text']}"
                     )
-                    docs.append(Document(page_content=page_content))
+                    docs.append(page_content)
 
                 else:
                     for text in item["text"]:
                         page_content = f"{header}Text: {text}"
-                        docs.append(Document(page_content=page_content))
+                        docs.append(page_content)
 
                 pbar.update(1)
 
-        print(f"Created {len(docs)} documents for Chroma vector store.")
+        print(f"Prepared {len(docs)} data.")
 
-        if os.path.exists(vectordb_path):
-            shutil.rmtree(vectordb_path)
-
-        vector_store = Chroma.from_documents(
-            documents=docs,
-            collection_name="collection",
-            embedding=embedding_model,
-            persist_directory=vectordb_path,
-            collection_metadata={"hnsw:space": "cosine"},
+        if milvus_client.has_collection(collection_name=MILVIUS_PDF_COLLECTION_NAME):
+            milvus_client.drop_collection(collection_name=MILVIUS_PDF_COLLECTION_NAME)
+        milvus_client.create_collection(
+            collection_name=MILVIUS_PDF_COLLECTION_NAME,
+            dimension=768,
+            consistency_level="Strong",
+            metric_type="IP",
         )
 
-        print("Saved documents into Chroma vector store.")
+        data_embeddings = embed_text(embedding_model, docs)
+
+        data_to_store = []
+
+        for index, item in enumerate(docs):
+            data_to_store.append(
+                {"id": index, "vector": data_embeddings[index], "text": item}
+            )
+
+        res = milvus_client.insert(
+            collection_name=MILVIUS_PDF_COLLECTION_NAME, data=data_to_store
+        )
+        print(
+            f"Saved data into milvus vector store under collection_name as {MILVIUS_PDF_COLLECTION_NAME}."
+        )
+        print(res)
 
     else:
         print("Unexpected error occurred in data extraction process.")
 
 
-def load_data_from_vectorstore(
-    embedding_model: HuggingFaceEmbeddings, vectordb_path: str
-):
-    if os.path.exists(vectordb_path):
-        vectorstore = Chroma(
-            collection_name="collection",
-            persist_directory=vectordb_path,
-            embedding_function=embedding_model,
-            collection_metadata={"hnsw:space": "cosine"},
-        )
-
-        print("Loaded Chroma vector store.")
-
-        total_documents = vectorstore._collection.count()
-
-        return vectorstore.as_retriever(
-            search_type="similarity_score_threshold",
-            search_kwargs={"k": int(total_documents * 0.1), "score_threshold": 0.5},
-        )
-
-    else:
-        print("Unable to load Chroma vector store due to path does not exist.")
-        return None
-
-
 if __name__ == "__main__":
-    # Testing
-    embedding_model = HuggingFaceEmbeddings(
-        model_name=EMBEDDING_MODEL,
-        model_kwargs={"device": device, "trust_remote_code": True},
-        encode_kwargs={"normalize_embeddings": True},
+    # Test save vector store
+    embedding_model = SentenceTransformer(
+        model_name_or_path=EMBEDDING_MODEL, trust_remote_code=True, device=device
     )
-
-    vectordb_path = "../vectordb_chroma/"
 
     # Choose mode: hf / vllm
     process_mode = "vllm"
@@ -368,28 +351,20 @@ if __name__ == "__main__":
         save_data_to_vectorstore(
             llm_and_tokenizer=llm_and_tokenizer,
             embedding_model=embedding_model,
-            vectordb_path=vectordb_path,
             data_path="../../data/Pdf/2a85b52768ea5761b773be49b09d15f0b95415b0.pdf",
         )
 
-        print(f"Total execution time: {perf_counter() - start:.2f} seconds.")
+        print(
+            f"Total execution time for saving data to milvus vector store: {perf_counter() - start:.2f} seconds."
+        )
     else:
         start = perf_counter()
 
         save_data_to_vectorstore(
             embedding_model=embedding_model,
-            vectordb_path=vectordb_path,
             data_path="../../data/Pdf/2a85b52768ea5761b773be49b09d15f0b95415b0.pdf",
         )
 
-        print(f"Total execution time: {perf_counter() - start:.2f} seconds.")
-
-    retriever = load_data_from_vectorstore(
-        embedding_model=embedding_model, vectordb_path=vectordb_path
-    )
-
-    query = "what is nvidia?"
-
-    retrieved_docs = retriever.get_relevant_documents(query)
-    print(retrieved_docs)
-    print(len(retrieved_docs))
+        print(
+            f"Total execution time for saving data to milvus vector store: {perf_counter() - start:.2f} seconds."
+        )
