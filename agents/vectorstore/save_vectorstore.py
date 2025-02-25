@@ -303,7 +303,7 @@ def save_data_to_vectorstore(
 
         with tqdm(
             total=len(organized_data),
-            desc="Creating documents for vector store.",
+            desc="Creating data for vector store.",
             unit="Data",
         ) as pbar:
             for item in organized_data:
