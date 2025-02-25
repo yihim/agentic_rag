@@ -29,10 +29,10 @@ pip install -r requirements.txt
 ```
 
 ### 4. *Create a .env file containing:*
-1. HF_TOKEN_WRITE - Create write access huggingface token at [here](https://huggingface.co/security-checkup?next=%2Fsettings%2Ftokens)
-2. HF_TOKEN_READ - Create read access huggingface token at [here](https://huggingface.co/security-checkup?next=%2Fsettings%2Ftokens)
-3. TAVILY_API_KEY - Get your api key at [here](https://tavily.com/)
-4. VLLM_API_KEY - Create a preferred key
+- **HF_TOKEN_WRITE** - Create write access huggingface token at [here](https://huggingface.co/security-checkup?next=%2Fsettings%2Ftokens)
+- **HF_TOKEN_READ** - Create read access huggingface token at [here](https://huggingface.co/security-checkup?next=%2Fsettings%2Ftokens)
+- **TAVILY_API_KEY** - Get your api key at [here](https://tavily.com/)
+- **VLLM_API_KEY** - Create a preferred key
 
 ### 5. *Download model from huggingface*
 ```bash
@@ -44,18 +44,23 @@ python download_huggingface_model.py
 - **--api-key:** Change it according to the *VLLM_API_KEY* defined in *Step 4*
 
 ### 7. *Build and start the Docker containers using `docker-compose` file*
-1. *Ensure is in root directory to build for the main project*
+- **Ensure is in root directory to build for the main project**
 ```bash
  docker-compose up --build -d
- ```
-2. *Change directory to milvus to build for the vector store as well*
+```
+- **Change directory to milvus to build for the vector store as well**
 ```bash
   cd milvus
   docker-compose up --build -d
- ```
+```
 
 ### 8. *Clear cache after everything installed successfully*
+- **Environment**
 ```bash
 pip cache purge
 conda clean --all -y
+```
+- **Docker**
+```bash
+docker builder prune 
 ```
