@@ -13,6 +13,7 @@ from agents.constants.models import (
 import pprint
 import json
 from tqdm import tqdm
+from tqdm.asyncio import tqdm as tqdm_async
 
 load_dotenv()
 
@@ -90,7 +91,7 @@ async def vllm_process_data(
 
     async with aiohttp.ClientSession() as session:
         tasks = [send_request(session, payload) for payload in request_payloads]
-        results = await asyncio.gather(*tasks)
+        results = await tqdm_async.gather(*tasks, desc=f"Processing {data_type} requests", unit="Request")
 
     error_occurred_msg = None
     for result in results:
@@ -102,7 +103,7 @@ async def vllm_process_data(
 
         total_processed = 0
         with tqdm(
-            total=len(data), desc=f"Processing {data_type} batches", unit="Data"
+            total=len(data), desc=f"Processing {data_type} responses", unit="Data"
         ) as pbar:
             for idx, result in enumerate(results):
                 # print(f"Result of {idx}: {result}")
