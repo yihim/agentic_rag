@@ -62,7 +62,7 @@ web_search_tool = [
 
 
 if __name__ == "__main__":
-    # Testing
+    # Test web search
     query = "what is agentic ai?"
 
     search_input = TavilySearchInput(query=query)
