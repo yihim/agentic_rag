@@ -3,6 +3,7 @@ __pycache__
 .ipynb
 .gradio
 .env
+data
 pdf_data
 pdf_tmp
 web_tmp
