@@ -3,7 +3,8 @@ __pycache__
 .ipynb
 .gradio
 .env
-data
-tmp
+pdf_data
+pdf_tmp
+web_tmp
 volumes
 notes

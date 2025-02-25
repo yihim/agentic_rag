@@ -1,13 +1,13 @@
 services:
   mineru:
     build:
-      context: ./data_extraction/mineru
+      context: ./mineru
       dockerfile: Dockerfile.mineru
     ports:
       - "8000:8000"
     volumes:
-      - "./data_extraction/tmp:/app/tmp"
-      - "./data_extraction/data:/app/data"
+      - "./data_extracted/pdf_tmp:/app/tmp"
+      - "./data_extracted/pdf_data:/app/data"
     runtime: nvidia
     deploy:
       resources:
