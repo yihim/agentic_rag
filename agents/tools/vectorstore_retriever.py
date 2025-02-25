@@ -1,12 +1,14 @@
 from pymilvus import MilvusClient
-from agents.constants.vectorstore import MILVIUS_ENDPOINT, MILVIUS_PDF_COLLECTION_NAME
+from agents.constants.vectorstore import MILVIUS_ENDPOINT, MILVIUS_PDF_COLLECTION_NAME, MILVIUS_WEB_COLLECTION_NAME
 from sentence_transformers import SentenceTransformer
 from agents.constants.models import EMBEDDING_MODEL
 import torch
 from agents.utils.models import embed_text
 from pprint import pprint
 
+data_source = "pdf"
 device = "cuda" if torch.cuda.is_available() else "cpu"
+milvus_collection_name = MILVIUS_PDF_COLLECTION_NAME if data_source=="pdf" else MILVIUS_WEB_COLLECTION_NAME
 
 milvus_client = MilvusClient(uri=MILVIUS_ENDPOINT)
 milvus_client.flush(collection_name=MILVIUS_PDF_COLLECTION_NAME)
@@ -19,16 +21,16 @@ embedding_model = SentenceTransformer(
 if __name__ == "__main__":
     # Test search vector store
     total_data_stored = milvus_client.get_collection_stats(
-        collection_name=MILVIUS_PDF_COLLECTION_NAME
+        collection_name=milvus_collection_name
     )["row_count"]
     print(
-        f"Total data stored for collection_name - {MILVIUS_PDF_COLLECTION_NAME} is {total_data_stored}."
+        f"Total data stored for collection_name - {milvus_collection_name} is {total_data_stored}."
     )
 
     query = "what is this document about?"
 
     search_result = milvus_client.search(
-        collection_name=MILVIUS_PDF_COLLECTION_NAME,
+        collection_name=milvus_collection_name,
         data=embed_text(embedding_model=embedding_model, data=[query]),
         limit=int(0.1 * total_data_stored),
         search_params={"metric_type": "IP", "params": {}},
