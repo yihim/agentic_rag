@@ -91,27 +91,37 @@ async def vllm_process_data(
     async with aiohttp.ClientSession() as session:
         tasks = [send_request(session, payload) for payload in request_payloads]
         results = await asyncio.gather(*tasks)
+
+    error_occurred_msg = None
+    for result in results:
+        if result["object"] == "error":
+            error_occurred_msg = f"Error occurred: {result['message']}"
+            break
+    if error_occurred_msg is None:
         results = [result["choices"][0]["message"]["content"] for result in results]
 
-    total_processed = 0
-    with tqdm(
-        total=len(data), desc=f"Processing {data_type} batches", unit="Data"
-    ) as pbar:
-        for idx, result in enumerate(results):
-            # print(f"Result of {idx}: {result}")
-            if result:
-                if data_type == "table":
-                    extracted_response = json.loads(result)["description"]
-                else:
-                    extracted_response = json.loads(result)
+        total_processed = 0
+        with tqdm(
+            total=len(data), desc=f"Processing {data_type} batches", unit="Data"
+        ) as pbar:
+            for idx, result in enumerate(results):
+                # print(f"Result of {idx}: {result}")
+                if result:
+                    if data_type == "table":
+                        extracted_response = json.loads(result)["description"]
+                    else:
+                        extracted_response = json.loads(result)
 
-                data[idx]["text"] = extracted_response
+                    data[idx]["text"] = extracted_response
 
-            pbar.update(1)
-            total_processed += 1
-            pbar.set_postfix({"Processed": f"{total_processed}/{len(data)}"})
+                pbar.update(1)
+                total_processed += 1
+                pbar.set_postfix({"Processed": f"{total_processed}/{len(data)}"})
 
-        return data
+            return data
+    else:
+        print(error_occurred_msg)
+        return None
 
 
 if __name__ == "__main__":
