@@ -14,8 +14,6 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
 )
-
-from agents.engines.query_rewriter import client
 from agents.utils.models import load_llm_and_tokenizer, set_random_seed, embed_text
 from typing import Tuple, Optional, List
 import requests
