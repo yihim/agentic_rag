@@ -9,7 +9,7 @@ from agents.constants.models import (
     AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
     TABLE_ORGANIZER_LLM_MAX_TOKENS,
     AGENTIC_CHUNKER_LLM_MAX_TOKENS,
-    VLLM_API_ENDPOINT,
+    VLLM_API_CHAT_COMPLETIONS_URL,
     VLLM_API_REQUEST_PAYLOAD_TEMPLATE
 )
 import pprint
@@ -27,7 +27,7 @@ HEADERS = {
 
 async def send_request(session, payload):
     """Send a single request asynchronously."""
-    async with session.post(VLLM_API_ENDPOINT, headers=HEADERS, json=payload) as response:
+    async with session.post(VLLM_API_CHAT_COMPLETIONS_URL, headers=HEADERS, json=payload) as response:
         result = await response.json()
         return result
 
