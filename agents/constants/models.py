@@ -4,7 +4,7 @@ QWEN = "Qwen/Qwen2.5-14B-Instruct"
 
 # vLLM
 VLLM_BASE_URL = "http://localhost:8080/v1"
-VLLM_API_CHAT_COMPLETIONS_URL = F"{VLLM_BASE_URL}/chat/completions"
+VLLM_API_CHAT_COMPLETIONS_URL = f"{VLLM_BASE_URL}/chat/completions"
 VLLM_API_REQUEST_PAYLOAD_TEMPLATE = {
     "model": "/model",
     "seed": 42,
