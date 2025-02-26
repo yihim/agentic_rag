@@ -9,8 +9,7 @@ from agents.constants.models import (
 )
 from agents.constants.vectorstore import (
     MILVIUS_ENDPOINT,
-    MILVIUS_PDF_COLLECTION_NAME,
-    MILVIUS_WEB_COLLECTION_NAME,
+    MILVIUS_COLLECTION_NAME,
 )
 from transformers import (
     AutoModelForCausalLM,
@@ -328,16 +327,10 @@ def save_data_to_vectorstore(
 
         print(f"Prepared {len(docs)} data.")
 
-        milvus_collection_name = (
-            MILVIUS_PDF_COLLECTION_NAME
-            if data_source == "pdf"
-            else MILVIUS_WEB_COLLECTION_NAME
-        )
-
-        if milvus_client.has_collection(collection_name=milvus_collection_name):
-            milvus_client.drop_collection(collection_name=milvus_collection_name)
+        if milvus_client.has_collection(collection_name=MILVIUS_COLLECTION_NAME):
+            milvus_client.drop_collection(collection_name=MILVIUS_COLLECTION_NAME)
         milvus_client.create_collection(
-            collection_name=milvus_collection_name,
+            collection_name=MILVIUS_COLLECTION_NAME,
             dimension=embedding_dim,
             consistency_level="Strong",
             metric_type="IP",
@@ -353,10 +346,10 @@ def save_data_to_vectorstore(
             )
 
         res = milvus_client.insert(
-            collection_name=milvus_collection_name, data=data_to_store
+            collection_name=MILVIUS_COLLECTION_NAME, data=data_to_store
         )
         print(
-            f"Saved data into milvus vector store under collection_name as {milvus_collection_name}."
+            f"Saved data into milvus vector store under collection_name as {MILVIUS_COLLECTION_NAME}."
         )
         print(res)
     else:
