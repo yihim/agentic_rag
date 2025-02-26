@@ -13,19 +13,19 @@ tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 class TavilySearchInput(BaseModel):
     query: str = Field(
         ...,
-        description="The search query to be processed",
+        description="The search query to be processed.",
         min_length=1,
         max_length=1000,
     )
 
 
 class TavilySearchResult(BaseModel):
-    answer: str = Field(..., description="Main answer synthesized from search results")
+    answer: str = Field(..., description="Main answer synthesized from search results.")
     sources: Optional[List[str]] = Field(
-        default=None, description="Sources of information"
+        default=None, description="Sources of information."
     )
     confidence_score: Optional[float] = Field(
-        default=None, description="Confidence score of the answer", ge=0.0, le=100.0
+        default=None, description="Confidence score of the answer.", ge=0.0, le=100.0
     )
 
 
@@ -48,17 +48,6 @@ def tavily_search(query: TavilySearchInput) -> TavilySearchResult:
         sources=sources,
         confidence_score=round(avg_scores * 100, 2),
     )
-
-
-web_search_tool = [
-    StructuredTool.from_function(
-        func=tavily_search,
-        name="Tavily search",
-        description="Use this tool to perform real-time web searches when you need external information that is not available in the local knowledge base.",
-        args_schema=TavilySearchInput,
-        return_direct=True,
-    )
-]
 
 
 if __name__ == "__main__":
