@@ -3,9 +3,8 @@ from agents.constants.models import (
     EMBEDDING_MODEL,
     QWEN,
     TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
-    TABLE_ORGANIZER_LLM_MAX_TOKENS,
-    AGENTIC_CHUNKER_LLM_MAX_TOKENS,
     AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
+    LLM_MAX_TOKENS
 )
 from agents.constants.vectorstore import (
     MILVIUS_ENDPOINT,
@@ -140,7 +139,7 @@ def clean_and_organize_external_data(
                     data=table_data,
                     data_type="table",
                     system_prompt=TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
-                    max_tokens=TABLE_ORGANIZER_LLM_MAX_TOKENS,
+                    max_tokens=LLM_MAX_TOKENS,
                 )
             )
         else:
@@ -150,7 +149,7 @@ def clean_and_organize_external_data(
                 data_type="table",
                 llm_and_tokenizer=llm_and_tokenizer,
                 system_prompt=TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
-                max_tokens=TABLE_ORGANIZER_LLM_MAX_TOKENS,
+                max_tokens=LLM_MAX_TOKENS,
                 batch_size=4,
             )
 
@@ -168,7 +167,7 @@ def clean_and_organize_external_data(
                     data=text_data,
                     data_type="text",
                     system_prompt=AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
-                    max_tokens=AGENTIC_CHUNKER_LLM_MAX_TOKENS,
+                    max_tokens=LLM_MAX_TOKENS,
                 )
             )
         else:
@@ -178,7 +177,7 @@ def clean_and_organize_external_data(
                 data_type="text",
                 llm_and_tokenizer=llm_and_tokenizer,
                 system_prompt=AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
-                max_tokens=AGENTIC_CHUNKER_LLM_MAX_TOKENS,
+                max_tokens=LLM_MAX_TOKENS,
                 batch_size=4,
             )
 
