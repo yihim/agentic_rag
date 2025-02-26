@@ -25,7 +25,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - "C:\\Users\\PC\\.cache\\huggingface\\hub\\models--unsloth--Qwen2.5-14B-Instruct-bnb-4bit\\snapshots\\f010a5cd44911b4fff441fcfa67200643ed811c4:/model"
+      - "C:\\Users\\PC\\.cache\\huggingface\\hub\\models--Qwen--Qwen2.5-14B-Instruct-AWQ\\snapshots\\539535859b135b0244c91f3e59816150c8056698:/Qwen2.5-14B-Instruct-AWQ"
     ipc: host
     runtime: nvidia
     deploy:
@@ -36,15 +36,16 @@ services:
               count: all
               capabilities: [gpu]
     command: >
-      --model "/model"
+      --model "/Qwen2.5-14B-Instruct-AWQ"
       --max-num-seqs 8
       --seed 42
-      --max-model-len 5120
+      --max-model-len 4096
+      --task generate
       --port 8080
-      --quantization bitsandbytes
-      --load-format bitsandbytes
+      --quantization awq_marlin
+      --load-format auto
       --api-key vllm
-      --dtype bfloat16
+      --dtype float16
 
   etcd:
     container_name: milvus-etcd

@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from langchain_core.messages import SystemMessage, HumanMessage
-from agents.constants.models import QUERY_REWRITER_SYSTEM_PROMPT, LLM_MAX_TOKENS
+from agents.constants.models import QUERY_REWRITER_SYSTEM_PROMPT, LLM_MAX_TOKENS, VLLM_MODEL
 
 
 class QueryRewriterOutput(BaseModel):
@@ -17,7 +17,7 @@ load_dotenv()
 client = ChatOpenAI(
     base_url=VLLM_BASE_URL,
     api_key=os.getenv("VLLM_API_KEY"),
-    model="/model",
+    model=VLLM_MODEL,
     verbose=True,
     request_timeout=None,
 )

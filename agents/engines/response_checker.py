@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from langchain_core.messages import SystemMessage
-from agents.constants.models import RESPONSE_CHECKER_SYSTEM_PROMPT, LLM_MAX_TOKENS
+from agents.constants.models import RESPONSE_CHECKER_SYSTEM_PROMPT, LLM_MAX_TOKENS, VLLM_MODEL
 
 
 class ResponseCheckerOutput(BaseModel):
@@ -20,7 +20,7 @@ load_dotenv()
 client = ChatOpenAI(
     base_url=VLLM_BASE_URL,
     api_key=os.getenv("VLLM_API_KEY"),
-    model="/model",
+    model=VLLM_MODEL,
     verbose=True,
     request_timeout=None,
 )

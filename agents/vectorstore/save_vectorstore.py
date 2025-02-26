@@ -1,7 +1,7 @@
 import os
 from agents.constants.models import (
     EMBEDDING_MODEL,
-    QWEN,
+    QWEN_14B_INSTRUCT,
     TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
     AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
     LLM_MAX_TOKENS,
@@ -386,7 +386,7 @@ if __name__ == "__main__":
     process_mode = "vllm"
 
     # Choose source: pdf / web
-    data_source = "web"
+    data_source = "pdf"
 
     data_path = (
         (root_dir / "data" / "Pdf" / "2a85b52768ea5761b773be49b09d15f0b95415b0.pdf")
@@ -400,7 +400,7 @@ if __name__ == "__main__":
     )
 
     if process_mode == "hf":
-        llm_and_tokenizer = load_llm_and_tokenizer(llm_name=QWEN, device=device)
+        llm_and_tokenizer = load_llm_and_tokenizer(llm_name=QWEN_14B_INSTRUCT, device=device)
 
         start = perf_counter()
 

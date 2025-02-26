@@ -1,12 +1,15 @@
 # Model names
 EMBEDDING_MODEL = "nomic-ai/nomic-embed-text-v1.5"
-QWEN = "Qwen/Qwen2.5-14B-Instruct"
+QWEN_14B_INSTRUCT = "Qwen/Qwen2.5-14B-Instruct"
+QWEN_14B_INSTRUCT_AWQ = "Qwen/Qwen2.5-14B-Instruct-AWQ"
+QWEN_14B_INSTRUCT_BNB_4BIT = "unsloth/Qwen2.5-14B-Instruct-bnb-4bit"
 
 # vLLM
 VLLM_BASE_URL = "http://localhost:8080/v1"
 VLLM_API_CHAT_COMPLETIONS_URL = f"{VLLM_BASE_URL}/chat/completions"
+VLLM_MODEL = "/Qwen2.5-14B-Instruct-AWQ"
 VLLM_API_REQUEST_PAYLOAD_TEMPLATE = {
-    "model": "/model",
+    "model": VLLM_MODEL,
     "seed": 42,
     "temperature": 0.01,
     "top_p": 0.8,
