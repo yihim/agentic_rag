@@ -7,5 +7,5 @@ data
 pdf_data
 pdf_tmp
 web_tmp
-volumes
+milvus_volumes
 notes
