@@ -2,6 +2,19 @@
 EMBEDDING_MODEL = "nomic-ai/nomic-embed-text-v1.5"
 QWEN = "Qwen/Qwen2.5-14B-Instruct"
 
+# vLLM
+VLLM_API_ENDPOINT = "http://localhost:8080/v1/chat/completions"
+VLLM_API_REQUEST_PAYLOAD_TEMPLATE = {
+    "model": "/model",
+    "seed": 42,
+    "temperature": 0.01,
+    "top_p": 0.8,
+    "repetition_penalty": 1,
+    "presence_penalty": 0,
+    "frequency_penalty": 0,
+    "top_k": 20,
+}
+
 # Max Tokens Length
 TABLE_ORGANIZER_LLM_MAX_TOKENS = 2560
 AGENTIC_CHUNKER_LLM_MAX_TOKENS = 2560

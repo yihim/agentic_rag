@@ -9,6 +9,8 @@ from agents.constants.models import (
     AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
     TABLE_ORGANIZER_LLM_MAX_TOKENS,
     AGENTIC_CHUNKER_LLM_MAX_TOKENS,
+    VLLM_API_ENDPOINT,
+    VLLM_API_REQUEST_PAYLOAD_TEMPLATE
 )
 import pprint
 import json
@@ -17,28 +19,15 @@ from tqdm.asyncio import tqdm as tqdm_async
 
 load_dotenv()
 
-API_URL = "http://localhost:8080/v1/chat/completions"
-
 HEADERS = {
     "Authorization": f"Bearer {os.getenv('VLLM_API_KEY')}",
     "Content-Type": "application/json",
 }
 
-REQUEST_PAYLOAD_TEMPLATE = {
-    "model": "/model",
-    "seed": 42,
-    "temperature": 0.01,
-    "top_p": 0.8,
-    "repetition_penalty": 1,
-    "presence_penalty": 0,
-    "frequency_penalty": 0,
-    "top_k": 20,
-}
-
 
 async def send_request(session, payload):
     """Send a single request asynchronously."""
-    async with session.post(API_URL, headers=HEADERS, json=payload) as response:
+    async with session.post(VLLM_API_ENDPOINT, headers=HEADERS, json=payload) as response:
         result = await response.json()
         return result
 
@@ -58,7 +47,7 @@ async def vllm_process_data(
                     "content": f"Below is the HTML formatted table:\n{item['table']}\nPlease provide a contextualized description for it.",
                 },
             ]
-            payload = REQUEST_PAYLOAD_TEMPLATE.copy()
+            payload = VLLM_API_REQUEST_PAYLOAD_TEMPLATE.copy()
             payload["max_tokens"] = max_tokens
             payload["messages"] = messages
             payload["guided_json"] = {
@@ -82,7 +71,7 @@ async def vllm_process_data(
                 },
             ]
 
-            payload = REQUEST_PAYLOAD_TEMPLATE.copy()
+            payload = VLLM_API_REQUEST_PAYLOAD_TEMPLATE.copy()
             payload["max_tokens"] = max_tokens
             payload["messages"] = messages
             payload["guided_json"] = {"type": "array", "items": {"type": "string"}}
