@@ -25,12 +25,10 @@ client = ChatOpenAI(
 structured_client = client.with_structured_output(QueryRewriterOutput)
 
 
-def main():
+def rewrite_query(query: str):
     messages = [
         SystemMessage(content=QUERY_REWRITER_SYSTEM_PROMPT),
-        HumanMessage(
-            content="I'm having trouble understanding the recent changes in our company's HR policies, especially regarding the new remote work procedures and benefits adjustments. Can you explain what has changed and how these updates might affect my daily workflow?"
-        ),
+        HumanMessage(content=query),
     ]
 
     response = structured_client.invoke(
@@ -54,5 +52,5 @@ if __name__ == "__main__":
     # Test query rewriter
     root_dir = Path(__file__).parent.parent.parent
     os.chdir(root_dir)
-
-    print(main())
+    query = "I'm having trouble understanding the recent changes in our company's HR policies, especially regarding the new remote work procedures and benefits adjustments. Can you explain what has changed and how these updates might affect my daily workflow?"
+    print(rewrite_query(query=query))

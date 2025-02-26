@@ -28,15 +28,10 @@ client = ChatOpenAI(
 structured_client = client.with_structured_output(ResponseCheckerOutput)
 
 
-def main():
-    query = "How do I reset my forgotten email password?"
-    yes_answer = "To reset your forgotten email password, go to the login page and click on 'Forgot Password'. Enter your registered email address, complete any CAPTCHA or verification steps, and then check your inbox for a reset link. Follow the instructions in the email to create a new password."
-    no_answer = "Reset your password by contacting customer support."
+def check_response(query: str, answer: str):
     messages = [
         SystemMessage(
-            content=RESPONSE_CHECKER_SYSTEM_PROMPT.format(
-                query=query, answer=yes_answer
-            )
+            content=RESPONSE_CHECKER_SYSTEM_PROMPT.format(query=query, answer=answer)
         ),
     ]
 
@@ -62,4 +57,8 @@ if __name__ == "__main__":
     root_dir = Path(__file__).parent.parent.parent
     os.chdir(root_dir)
 
-    print(main())
+    query = "How do I reset my forgotten email password?"
+    yes_answer = "To reset your forgotten email password, go to the login page and click on 'Forgot Password'. Enter your registered email address, complete any CAPTCHA or verification steps, and then check your inbox for a reset link. Follow the instructions in the email to create a new password."
+    no_answer = "Reset your password by contacting customer support."
+
+    print(check_response(query=query, answer=yes_answer))
