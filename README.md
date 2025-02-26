@@ -48,11 +48,6 @@ python download_huggingface_model.py
 ```bash
  docker-compose up --build -d
 ```
-- **Change directory to milvus to build for the vector store as well**
-```bash
-  cd milvus
-  docker-compose up --build -d
-```
 
 ### 8. *Clear cache after everything installed successfully*
 - **Environment**
