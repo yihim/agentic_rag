@@ -4,7 +4,7 @@ from agents.constants.models import (
     QWEN,
     TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
     AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
-    LLM_MAX_TOKENS
+    LLM_MAX_TOKENS,
 )
 from agents.constants.vectorstore import (
     MILVIUS_ENDPOINT,
@@ -14,6 +14,8 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
 )
+
+from agents.engines.query_rewriter import client
 from agents.utils.models import load_llm_and_tokenizer, set_random_seed, embed_text
 from typing import Tuple, Optional, List
 import requests
@@ -89,45 +91,55 @@ def clean_and_organize_external_data(
     if data_source == "pdf":
         for data in cleaned_data:
             header = data["header"]
-            content = data["content"].split("\n")
+            content = data["content"]
 
-            text = []
+            if "```" in content:
+                organized_data.extend([{"header": header, "text": content}])
+            else:
+                content = content.split("\n")
 
-            for item in content:
-                if item:
-                    if item.startswith("<html><body><table>"):
-                        table_data.append({"header": header, "table": item})
-                    elif item.startswith("![]"):
-                        pass
-                    else:
-                        text.append(item)
+                text = []
 
-            if text:
-                text_data.append({"header": header, "text": text})
+                for item in content:
+                    if item:
+                        if item.startswith("<html><body><table>"):
+                            table_data.append({"header": header, "table": item})
+                        elif item.startswith("!["):
+                            pass
+                        else:
+                            text.append(item)
+
+                if text:
+                    text_data.append({"header": header, "text": text})
     else:
         for data in cleaned_data:
             header = data["header"]
-            content = data["content"].split("\n")
+            content = data["content"]
 
-            text = []
+            if "```" in content:
+                organized_data.extend([{"header": header, "text": content}])
+            else:
+                content = content.split("\n")
 
-            for item in content:
-                if item:
-                    if item.startswith("!["):
-                        image_title = re.search(r"!\[(.*?)\]", item)
-                        image_reference = re.search(r"\((.*?)\)", item)
-                        if image_title and image_reference:
-                            text_data.append(
-                                {
-                                    "header": header,
-                                    "text": f"Image titled: {image_title.group(1)}\nImage reference: {image_reference.group(1)}",
-                                }
-                            )
-                    else:
-                        text.append(item)
+                text = []
 
-            if text:
-                text_data.append({"header": header, "text": text})
+                for item in content:
+                    if item:
+                        if item.startswith("!["):
+                            image_title = re.search(r"!\[(.*?)\]", item)
+                            image_reference = re.search(r"\((.*?)\)", item)
+                            if image_title and image_reference:
+                                text_data.append(
+                                    {
+                                        "header": header,
+                                        "text": f"Image titled: {image_title.group(1)}\nImage reference: {image_reference.group(1)}",
+                                    }
+                                )
+                        else:
+                            text.append(item)
+
+                if text:
+                    text_data.append({"header": header, "text": text})
 
     # Process table data
     if table_data:
@@ -318,8 +330,12 @@ def save_data_to_vectorstore(
                     docs.append(page_content)
 
                 else:
-                    for text in item["text"]:
-                        page_content = f"{header}Text: {text}"
+                    if isinstance(item["text"], list):
+                        for text in item["text"]:
+                            page_content = f"{header}Text: {text}"
+                            docs.append(page_content)
+                    else:
+                        page_content = f"{header}Text: {item['text']}"
                         docs.append(page_content)
 
                 pbar.update(1)
