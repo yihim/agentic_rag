@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 from langchain_core.messages import SystemMessage, HumanMessage
-from agents.constants.models import QUERY_REWRITER_SYSTEM_PROMPT
+from agents.constants.models import QUERY_REWRITER_SYSTEM_PROMPT, LLM_MAX_TOKENS
 
 
 class QueryRewriterOutput(BaseModel):
@@ -36,7 +36,7 @@ def rewrite_query(query: str):
         temperature=0.01,
         seed=42,
         top_p=0.8,
-        max_tokens=1024,
+        max_tokens=LLM_MAX_TOKENS,
         extra_body={
             "top_k": 20,
             "repetition_penalty": 1,
