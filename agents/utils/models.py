@@ -7,7 +7,14 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
 )
-from typing import Tuple, List
+from typing import Tuple, List, Optional
+from langchain_openai import ChatOpenAI
+from dotenv import load_dotenv
+from agents.constants.models import VLLM_BASE_URL, VLLM_MODEL, LLM_MAX_TOKENS
+import os
+from langchain_core.messages import SystemMessage
+
+load_dotenv()
 
 
 # Reproducibility
@@ -64,3 +71,46 @@ def load_llm_and_tokenizer(llm_name: str, device: str) -> Tuple[
     print(f"Loaded {llm_name}")
 
     return llm, tokenizer
+
+
+# Load langchain chat openai
+def load_chat_model(streaming: bool = False) -> ChatOpenAI:
+    if streaming:
+        return ChatOpenAI(
+            base_url=VLLM_BASE_URL,
+            api_key=os.getenv("VLLM_API_KEY"),
+            model=VLLM_MODEL,
+            verbose=True,
+            request_timeout=None,
+            stream_usage=True,
+            stream=True,
+        )
+    else:
+        return ChatOpenAI(
+            base_url=VLLM_BASE_URL,
+            api_key=os.getenv("VLLM_API_KEY"),
+            model=VLLM_MODEL,
+            verbose=True,
+            request_timeout=None,
+        )
+
+
+# Get response from chat openai
+def get_chat_model_response(
+    client: ChatOpenAI, messages: List[SystemMessage]
+) -> Optional[str]:
+    response = client.invoke(
+        input=messages,
+        temperature=0.01,
+        seed=42,
+        top_p=0.8,
+        max_tokens=LLM_MAX_TOKENS,
+        extra_body={
+            "top_k": 20,
+            "repetition_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+        },
+    ).content
+
+    return response if response else None
