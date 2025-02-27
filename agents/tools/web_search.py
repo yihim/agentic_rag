@@ -1,9 +1,8 @@
 import os
 from dotenv import load_dotenv
 from tavily import TavilyClient
-from langchain.tools import StructuredTool
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 load_dotenv()
 
@@ -24,8 +23,8 @@ class TavilySearchResult(BaseModel):
     sources: Optional[List[str]] = Field(
         default=None, description="Sources of information."
     )
-    confidence_score: Optional[float] = Field(
-        default=None, description="Confidence score of the answer.", ge=0.0, le=100.0
+    confidence_score: Optional[str] = Field(
+        default=None, description="Confidence score of the answer."
     )
 
 
@@ -33,6 +32,7 @@ def tavily_search(query: TavilySearchInput) -> TavilySearchResult:
     """
     Perform a search using Tavily API with structured input and output.
     """
+    print("-" * 20, "TAVILY SEARCH", "-" * 20)
     response = tavily_client.search(
         query=query.query,
         include_answer="advanced",
@@ -41,12 +41,12 @@ def tavily_search(query: TavilySearchInput) -> TavilySearchResult:
 
     sources = [result.get("url", "") for result in response.get("results", [])]
     scores = [result.get("score", "") for result in response.get("results", [])]
-    avg_scores = sum(scores) / len(scores)
+    avg_scores = str(round(sum(scores) / len(scores) * 100, 2)) + "%"
 
     return TavilySearchResult(
         answer=response.get("answer", ""),
         sources=sources,
-        confidence_score=round(avg_scores * 100, 2),
+        confidence_score=avg_scores,
     )
 
 
@@ -57,7 +57,5 @@ if __name__ == "__main__":
     search_input = TavilySearchInput(query=query)
 
     result = tavily_search(search_input)
-
-    print("Answer:", result.answer)
-    print("\nSources:", result.sources)
-    print("\nConfidence Score:", result.confidence_score)
+    formatted_search_results = f"Tavily Search Results:\n\nContent: {result.answer}\nSources: {result.sources}\nConfidence Score: {result.confidence_score}"
+    print(formatted_search_results)

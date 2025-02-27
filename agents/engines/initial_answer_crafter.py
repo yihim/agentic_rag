@@ -19,6 +19,7 @@ initial_answer_crafter_llm = initial_answer_crafter_llm.with_structured_output(
 
 
 def craft_initial_answer(llm, query: str, context: str):
+    print("-" * 20, "CRAFT INITIAL ANSWER", "-" * 20)
     prompt = ChatPromptTemplate.from_messages(
         ("system", INITIAL_ANSWER_CRAFTER_SYSTEM_PROMPT)
     )

@@ -73,24 +73,14 @@ def load_llm_and_tokenizer(llm_name: str, device: str) -> Tuple[
 
 
 # Load langchain chat openai
-def load_chat_model(streaming: bool = False) -> ChatOpenAI:
-    if streaming:
-        return ChatOpenAI(
-            base_url=VLLM_BASE_URL,
-            api_key=os.getenv("VLLM_API_KEY"),
-            model=VLLM_MODEL,
-            verbose=True,
-            request_timeout=None,
-            stream_usage=True,
-            stream=True,
-            max_retries=3,
-        )
-    else:
-        return ChatOpenAI(
-            base_url=VLLM_BASE_URL,
-            api_key=os.getenv("VLLM_API_KEY"),
-            model=VLLM_MODEL,
-            verbose=True,
-            request_timeout=None,
-            max_retries=3,
-        )
+def load_chat_model() -> ChatOpenAI:
+    return ChatOpenAI(
+        base_url=VLLM_BASE_URL,
+        api_key=os.getenv("VLLM_API_KEY"),
+        model=VLLM_MODEL,
+        verbose=True,
+        request_timeout=None,
+        model_kwargs={"stream": True},
+        stream_usage=True,
+        max_retries=3,
+    )

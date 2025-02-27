@@ -1,4 +1,4 @@
-from pymilvus import MilvusClient
+from pymilvus import MilvusClient, MilvusException
 from agents.constants.vectorstore import MILVIUS_ENDPOINT, MILVIUS_COLLECTION_NAME
 from sentence_transformers import SentenceTransformer
 from agents.constants.models import EMBEDDING_MODEL
@@ -23,32 +23,37 @@ class MilvusRetrieveOutput(BaseModel):
 
 
 def milvus_retriever(query: str) -> Optional[MilvusRetrieveOutput]:
-    milvus_client = MilvusClient(uri=MILVIUS_ENDPOINT)
-    milvus_client.flush(collection_name=MILVIUS_COLLECTION_NAME)
-    total_data_stored = milvus_client.get_collection_stats(
-        collection_name=MILVIUS_COLLECTION_NAME
-    )["row_count"]
-    print(
-        f"Total data stored for collection_name - {MILVIUS_COLLECTION_NAME} is {total_data_stored}."
-    )
+    try:
+        print("-" * 20, "MILVUS RETRIEVER", "-" * 20)
+        milvus_client = MilvusClient(uri=MILVIUS_ENDPOINT)
+        milvus_client.flush(collection_name=MILVIUS_COLLECTION_NAME)
+        total_data_stored = milvus_client.get_collection_stats(
+            collection_name=MILVIUS_COLLECTION_NAME
+        )["row_count"]
+        print(
+            f"Total data stored for collection_name - {MILVIUS_COLLECTION_NAME} is {total_data_stored}."
+        )
 
-    search_result = milvus_client.search(
-        collection_name=MILVIUS_COLLECTION_NAME,
-        data=embed_text(embedding_model=embedding_model, data=[query]),
-        limit=int(0.1 * total_data_stored),
-        search_params={"metric_type": "IP", "params": {}},
-        output_fields=["text"],
-    )
-    res_with_distance = [
-        (res["entity"]["text"], res["distance"])
-        for res in search_result[0]
-        if res["distance"] > 0.5
-    ]
-    if res_with_distance:
-        pprint(f"{len(res_with_distance)} results found for query: {query}")
-        return res_with_distance
-    else:
-        pprint(f"No results found for query: {query}.")
+        search_result = milvus_client.search(
+            collection_name=MILVIUS_COLLECTION_NAME,
+            data=embed_text(embedding_model=embedding_model, data=[query]),
+            limit=int(0.1 * total_data_stored),
+            search_params={"metric_type": "IP", "params": {}},
+            output_fields=["text"],
+        )
+        res_with_distance = [
+            (res["entity"]["text"], res["distance"])
+            for res in search_result[0]
+            if res["distance"] > 0.5
+        ]
+        if res_with_distance:
+            pprint(f"{len(res_with_distance)} results found for query: {query}")
+            return res_with_distance
+        else:
+            pprint(f"No results found for query: {query}.")
+            return None
+    except MilvusException as e:
+        print(f"Unexpected error occurred in Milvus: {e.message}")
         return None
 
 
@@ -56,4 +61,8 @@ if __name__ == "__main__":
     # Test search vector store
     query = "What is this document about?"
     results = milvus_retriever(query=query)
-    pprint(results)
+    if results is not None:
+        formatted_context = "Local Knowledge Base Results:\n\n"
+        for index, (item, score) in enumerate(results):
+            formatted_context += f"{index + 1}.\n{item}\nConfidence Score: {score * 100:.2f}%\n\n"
+        print(formatted_context)

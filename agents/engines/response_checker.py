@@ -24,6 +24,7 @@ response_checker_llm = response_checker_llm.with_structured_output(
 
 
 def check_response(llm, query: str, answer: str):
+    print("-" * 20, "CHECK RESPONSE", "-" * 20)
     prompt = ChatPromptTemplate.from_messages(
         ("system", RESPONSE_CHECKER_SYSTEM_PROMPT)
     )

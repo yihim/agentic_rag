@@ -19,6 +19,7 @@ final_answer_crafter_llm = final_answer_crafter_llm.with_structured_output(
 
 
 def craft_final_answer(llm, answer: str):
+    print("-" * 20, "CRAFT FINAL ANSWER", "-" * 20)
     prompt = ChatPromptTemplate.from_messages(
         ("system", FINAL_ANSWER_CRAFTER_SYSTEM_PROMPT)
     )

@@ -2,20 +2,17 @@ from pydantic import BaseModel, Field
 from agents.constants.models import (
     TASK_ROUTER_SYSTEM_PROMPT,
 )
-from typing import Literal
+from typing import Literal, List
 from agents.utils.models import load_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 
 
 class TaskRouterAction(BaseModel):
     action: Literal[
-        "rewrite_query",
-        "check_kb",
-        "web_search",
-        "generate_answer",
-        "check_response",
-        "finalize_answer",
-        "retry",
+        "query_rewriter",
+        "milvus_retriever",
+        "initial_answer_crafter",
+        "response_checker",
     ] = Field(..., description="The next action to take in the workflow.")
     reasoning: str = Field(..., description="Reasoning behind the action decision.")
 
@@ -34,8 +31,9 @@ def router_action(
     web_context: str,
     answer: str,
     response_check: str,
-    task_history: str,
+    task_history: List[str],
 ):
+    print("-" * 20, "ROUTER ACTION", "-" * 20)
     prompt = ChatPromptTemplate.from_messages(("system", TASK_ROUTER_SYSTEM_PROMPT))
 
     chain = prompt | llm
