@@ -7,12 +7,11 @@ from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
 )
-from typing import Tuple, List, Optional
+from typing import Tuple, List
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
-from agents.constants.models import VLLM_BASE_URL, VLLM_MODEL, LLM_MAX_TOKENS
+from agents.constants.models import VLLM_BASE_URL, VLLM_MODEL
 import os
-from langchain_core.messages import SystemMessage, BaseMessage
 
 load_dotenv()
 
