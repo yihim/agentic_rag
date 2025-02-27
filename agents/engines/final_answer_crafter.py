@@ -1,31 +1,14 @@
 from pathlib import Path
 import os
-from agents.constants.models import VLLM_BASE_URL
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
-from pydantic import BaseModel, Field
 from langchain_core.messages import SystemMessage
-from agents.constants.models import FINAL_ANSWER_CRAFTER_SYSTEM_PROMPT, LLM_MAX_TOKENS, VLLM_MODEL
-
-
-class FinalAnswerCrafterOutput(BaseModel):
-    markdown_ans: str = Field(
-        ...,
-        description="The crafted final answer in markdown format.",
-    )
+from agents.constants.models import FINAL_ANSWER_CRAFTER_SYSTEM_PROMPT
+from agents.utils.models import load_chat_model, get_chat_model_response
 
 
 load_dotenv()
 
-client = ChatOpenAI(
-    base_url=VLLM_BASE_URL,
-    api_key=os.getenv("VLLM_API_KEY"),
-    model=VLLM_MODEL,
-    verbose=True,
-    request_timeout=None,
-)
-
-structured_client = client.with_structured_output(FinalAnswerCrafterOutput)
+client = load_chat_model()
 
 
 def craft_final_answer(answer: str):
@@ -33,21 +16,9 @@ def craft_final_answer(answer: str):
         SystemMessage(content=FINAL_ANSWER_CRAFTER_SYSTEM_PROMPT.format(answer=answer)),
     ]
 
-    response = structured_client.invoke(
-        input=messages,
-        temperature=0.01,
-        seed=42,
-        top_p=0.8,
-        max_tokens=LLM_MAX_TOKENS,
-        extra_body={
-            "top_k": 20,
-            "repetition_penalty": 1,
-            "presence_penalty": 0,
-            "frequency_penalty": 0,
-        },
-    )
+    response = get_chat_model_response(client=client, messages=messages).content
 
-    return response.markdown_ans
+    return response if response else None
 
 
 if __name__ == "__main__":
