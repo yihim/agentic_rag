@@ -84,6 +84,7 @@ def load_chat_model(streaming: bool = False) -> ChatOpenAI:
             request_timeout=None,
             stream_usage=True,
             stream=True,
+            max_retries=3,
         )
     else:
         return ChatOpenAI(
@@ -92,25 +93,5 @@ def load_chat_model(streaming: bool = False) -> ChatOpenAI:
             model=VLLM_MODEL,
             verbose=True,
             request_timeout=None,
+            max_retries=3,
         )
-
-
-# Get response from chat openai
-def get_chat_model_response(
-    client: ChatOpenAI, messages: List[SystemMessage]
-) -> BaseMessage:
-    response = client.invoke(
-        input=messages,
-        temperature=0.01,
-        seed=42,
-        top_p=0.8,
-        max_tokens=LLM_MAX_TOKENS,
-        extra_body={
-            "top_k": 20,
-            "repetition_penalty": 1,
-            "presence_penalty": 0,
-            "frequency_penalty": 0,
-        },
-    )
-
-    return response
