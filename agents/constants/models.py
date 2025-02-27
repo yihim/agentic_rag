@@ -118,6 +118,8 @@ Follow these guidelines:
 3. Rewrite for Clarity: Generate a new version of the query using clear, direct, and succinct language. Preserve all essential information, technical terms, and context.
 4. Ensure Accuracy: Do not alter the original meaning or omit any critical details.
 5. Output: Provide only the final, rewritten query in your response.
+
+Query: {query}
 """
 
 RESPONSE_CHECKER_SYSTEM_PROMPT = """
