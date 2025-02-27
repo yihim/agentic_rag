@@ -12,7 +12,7 @@ from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 from agents.constants.models import VLLM_BASE_URL, VLLM_MODEL, LLM_MAX_TOKENS
 import os
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import SystemMessage, BaseMessage
 
 load_dotenv()
 
@@ -98,7 +98,7 @@ def load_chat_model(streaming: bool = False) -> ChatOpenAI:
 # Get response from chat openai
 def get_chat_model_response(
     client: ChatOpenAI, messages: List[SystemMessage]
-) -> Optional[str]:
+) -> BaseMessage:
     response = client.invoke(
         input=messages,
         temperature=0.01,
@@ -111,6 +111,6 @@ def get_chat_model_response(
             "presence_penalty": 0,
             "frequency_penalty": 0,
         },
-    ).content
+    )
 
-    return response if response else None
+    return response
