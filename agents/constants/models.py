@@ -133,48 +133,25 @@ Answer: {answer}
 """
 
 FINAL_ANSWER_CRAFTER_SYSTEM_PROMPT = """
-You are an advanced response agent whose primary purpose is to generate final answers in a clean, structured Markdown format. 
-Follow these guidelines to ensure clarity, precision, and professionalism in your output:
-1. Markdown Structure:
-    - Begin with a clear title using a Markdown header (e.g., # Title).
-    - Provide an introductory section summarizing the key points of your answer.
-    - Organize your content into logical sections using headers (e.g., ## Section Title).
-    - Use bullet points or numbered lists where appropriate to enhance readability.
-2. Content Requirements:
-    - Ensure that all explanations, steps, or instructions are clearly presented and easy to follow.
-    - When applicable, include code blocks (using triple backticks) to highlight examples or command snippets.
-    - Add inline citations or links if referencing external information, following Markdown conventions.
-3. Styling and Formatting:
-    - Use bold or italics to emphasize important terms or instructions.
-    - Maintain consistent formatting throughout the document to ensure a professional appearance.
-4. Final Output:
-    - Your final answer should be entirely in Markdown format and should be ready to be rendered by any Markdown parser without additional modifications.
-    - Review your output to confirm that it meets the Markdown standards and is error-free.
-    - By adhering to these instructions, your response will be both comprehensive and formatted in a clear, professional Markdown style.
-By adhering to these instructions, your response will be both comprehensive and formatted in a clear, professional Markdown style.
+Format the provided answer in clean Markdown with:
+- A clear title using # heading
+- Logical section headers using ## or ### where needed
+- Bullet points or numbered lists for better readability
+- Code blocks with triple backticks for code snippets
+- Bold or italic text for emphasis on key points
+- Consistent formatting throughout
+
+Your output should be properly formatted Markdown ready for immediate rendering.
 
 Unformatted answer: {answer}
 """
 
 INITIAL_ANSWER_CRAFTER_SYSTEM_PROMPT = """
-Your task is to produce an initial answer by integrating the provided user query with its associated context. 
-Follow these steps:
-1. Analyze the Input:
-    - Read and understand the user’s query to identify the main question or issue.
-    - Review the provided context to gather supporting details and background information.
-2. Synthesize the Information:
-    - Combine the insights from the query and the context to craft a well-rounded answer.
-    - Highlight key points and ensure that every important detail from the context that relates to the query is addressed.
-    - Clarify any ambiguities or assumptions as needed.
-3. Structure Your Response:
-    - Begin with a brief introduction that outlines your understanding of the query.
-    - Develop the main body of your answer by logically organizing the information—this can be in paragraph form or using lists if that enhances clarity.
-    - End with a concise conclusion that summarizes your response.
-4. Style and Clarity:
-    - Use clear, straightforward language that is easy to understand.
-    - Ensure your answer flows logically and covers all aspects of the query.
-    - Focus on delivering a comprehensive and precise response without additional formatting for the final presentation.
-By following these guidelines, generate an initial answer that effectively addresses the query using the provided context.
+Create a direct answer to the user query using only the provided context. Your response should:
+- Address the main question completely based on the context information
+- Include all relevant details from the context without adding external information
+- Present information in a clear, logical structure
+- Use straightforward language without explanations about your process
 
 Query: {query}
 Context: {context}

@@ -1,24 +1,33 @@
 from pathlib import Path
-import os
-from dotenv import load_dotenv
-from langchain_core.messages import SystemMessage
 from agents.constants.models import FINAL_ANSWER_CRAFTER_SYSTEM_PROMPT
-from agents.utils.models import load_chat_model, get_chat_model_response
+from agents.utils.models import load_chat_model
+from time import perf_counter
+from langchain_core.prompts import ChatPromptTemplate
+from pydantic import BaseModel, Field
+import os
 
 
-load_dotenv()
+class FinalAnswerCrafterOutput(BaseModel):
+    markdown_ans: str = Field(..., description="The markdown formatted answer.")
 
-client = load_chat_model()
+
+final_answer_crafter_llm = load_chat_model()
+
+final_answer_crafter_llm = final_answer_crafter_llm.with_structured_output(
+    FinalAnswerCrafterOutput
+)
 
 
-def craft_final_answer(answer: str):
-    messages = [
-        SystemMessage(content=FINAL_ANSWER_CRAFTER_SYSTEM_PROMPT.format(answer=answer)),
-    ]
+def craft_final_answer(llm, answer: str):
+    prompt = ChatPromptTemplate.from_messages(
+        ("system", FINAL_ANSWER_CRAFTER_SYSTEM_PROMPT)
+    )
 
-    response = get_chat_model_response(client=client, messages=messages).content
+    chain = prompt | llm
 
-    return response if response else None
+    response = chain.invoke({"answer": answer})
+
+    return response.markdown_ans if response.markdown_ans else None
 
 
 if __name__ == "__main__":
@@ -27,4 +36,6 @@ if __name__ == "__main__":
     os.chdir(root_dir)
 
     answer = "To reset your forgotten email password, go to the login page and click on 'Forgot Password'. Enter your registered email address, complete any CAPTCHA or verification steps, and then check your inbox for a reset link. Follow the instructions in the email to create a new password."
-    print(craft_final_answer(answer=answer))
+    start = perf_counter()
+    print(craft_final_answer(llm=final_answer_crafter_llm, answer=answer))
+    print(f"{perf_counter() - start:.2f} seconds.")
