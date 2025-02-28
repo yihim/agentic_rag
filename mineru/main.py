@@ -13,14 +13,13 @@ warnings.filterwarnings("ignore")
 # Configure root logger
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 
 # Get logger for this module
 logger = logging.getLogger(__name__)
+
 
 class SupportedFileTypes(str, Enum):
     PDF = "pdf"

@@ -78,7 +78,10 @@ def extract_data_from_source(data_path: str) -> str:
                     md_writer, f"{name_without_suff}.md", image_dir
                 )
     except Exception as e:
-        logger.error(f"Unexpected error occurred in extract_data_from_source function: {e}", exc_info=True)
+        logger.error(
+            f"Unexpected error occurred in extract_data_from_source function: {e}",
+            exc_info=True,
+        )
         print(f"Unexpected error occurred in extract_data_from_source function: {e}")
     finally:
         extracted_data_path = os.path.join(local_md_dir, name_without_suff + ".md")
