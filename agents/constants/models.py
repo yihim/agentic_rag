@@ -86,8 +86,8 @@ WORKFLOW STEPS:
 1. Rewrite incoming query to optimize for search effectiveness. After rewriting, proceed to step 2.
 2. Check local knowledge base for relevant context. After checking, proceed to step 3.
 3. If the knowledge base context is empty or irrelevant, proceed to step 4; Otherwise, proceed to step 5.
-4. If the knowledge base context is empty or irrelevant, perform real-time web search. After performing, proceed to step 5.
-5. Generate an initial answer. After generating, proceed to step 6.
+4. Perform real-time web search. After performing, proceed to step 5.
+5. Generate an initial answer based on the obtained relevant context. After generating, proceed to step 6.
 6. Always check if the current answer fully addresses the query. After checking, proceed to step 7.
 7. If response check result is 'yes', generate a formatted final answer; If check result is 'no', repeat the entire flow again.
 
@@ -140,7 +140,6 @@ Follow these guidelines:
 5. Output: Provide only the final, rewritten query without explanations or commentary.
 
 Latest conversation history: {chat_history}
-Earlier conversation summary: {conversation_summary}
 Current query: {query}
 """
 
@@ -169,11 +168,16 @@ Unformatted answer: {answer}
 """
 
 INITIAL_ANSWER_CRAFTER_SYSTEM_PROMPT = """
-Create a direct answer to the user query using only the provided context. Your response should:
-- Address the main question completely based on the context information
-- Include all relevant details from the context without adding external information
-- Present information in a clear, logical structure
-- Use straightforward language without explanations about your process
+Create a comprehensive and detailed answer to the user query using only the provided context.
+Your response should:
+- Address all aspects of the question completely based on the context information
+- Include all relevant facts, figures, and nuances from the context
+- Extract and synthesize information from different parts of the context when needed
+- Present information in a clear, logical structure with appropriate headings if necessary
+- Use direct quotes from the context when particularly relevant
+- Maintain the technical level and terminology present in the context
+- Ensure no external information or assumptions are added beyond what's in the context
+- Prioritize completeness and accuracy over brevity
 
 Query: {query}
 Context: {context}
@@ -210,6 +214,5 @@ Keep your response concise and appropriate to the social context.
 Do not attempt to retrieve or present factual information unless explicitly mentioned in the chat history.
 
 Latest conversation history: {chat_history}
-Earlier conversation summary: {conversation_summary}
 Query: {query}
 """

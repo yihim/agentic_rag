@@ -2,26 +2,19 @@ from typing import TypedDict, List, Union
 from langchain_core.messages import (
     HumanMessage,
     AIMessage,
-    RemoveMessage,
 )
 from agents.engines.initial_answer_crafter import (
     InitialAnswerCrafterOutput,
     craft_initial_answer,
 )
 from agents.engines.final_answer_crafter import (
-    FinalAnswerCrafterOutput,
     craft_final_answer,
 )
 from agents.engines.task_router import TaskRouterAction, router_action
 from agents.engines.query_rewriter import QueryWriterOutput, rewrite_query
 from agents.engines.response_checker import ResponseCheckerOutput, check_response
-from agents.engines.conversation_summarizer import (
-    ConversationSummarizerOutput,
-    summarize_conversation,
-)
 from agents.engines.query_classifier import QueryClassifierOutput, classify_query
 from agents.engines.conversation_responder import (
-    ConversationalResponderOutput,
     response_conversation,
 )
 from agents.tools.web_search import tavily_search, TavilySearchInput
@@ -29,6 +22,7 @@ from agents.tools.vectorstore_retriever import milvus_retriever
 from agents.utils.models import load_chat_model
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, END
+from langchain_core.runnables import RunnableConfig
 from langchain_core.runnables.graph import MermaidDrawMethod
 from IPython.display import Image
 import asyncio
@@ -45,7 +39,6 @@ class AgentState(TypedDict):
     web_context: str
     answer: str
     response_check: str
-    conversation_summary: str
     current_step: str
     task_action_history: List[str]
     task_action_reason_history: List[str]
@@ -77,20 +70,17 @@ def create_multi_agents():
 
         return {"is_conversational": classify_result}
 
-    def execute_respond_conversation(state: AgentState):
-        response = response_conversation(
-            llm=llm.with_structured_output(ConversationalResponderOutput),
+    async def execute_respond_conversation(state: AgentState, config: RunnableConfig):
+        response = await response_conversation(
+            llm=llm,
             query=state["query"],
             chat_history=state["messages"],
-            conversation_summary=state["conversation_summary"],
+            config=config,
         )
 
-        print(f"Conversational Response: {response}")
+        print(f"\n\nConversational Response: {response}")
 
-        messages = state["messages"].copy()
-        messages.append(AIMessage(content=response))
-
-        return {"messages": messages}
+        return {"answer": response}
 
     def task_router_node(state: AgentState):
         """Central task router that determines the next action"""
@@ -127,7 +117,6 @@ def create_multi_agents():
             llm=llm.with_structured_output(QueryWriterOutput),
             query=query,
             chat_history=state["messages"],
-            conversation_summary=state["conversation_summary"],
         )
 
         print(f"Rewritten query from '{query}' to '{rewritten}'")
@@ -183,51 +172,22 @@ def create_multi_agents():
 
         return {"response_check": check_result}
 
-    def execute_craft_final_answer(state: AgentState):
-        response = craft_final_answer(
-            llm=llm.with_structured_output(FinalAnswerCrafterOutput),
-            answer=state["answer"],
+    async def execute_craft_final_answer(state: AgentState, config: RunnableConfig):
+        response = await craft_final_answer(
+            llm=llm, answer=state["answer"], config=config
         )
 
-        print(f"Final Answer:\n{response}")
+        print(f"\n\nFinal Answer:\n{response}")
 
-        messages = state["messages"].copy()
-        messages.append(AIMessage(content=response))
-
-        return {"messages": messages}
-
-    def execute_summarize_conversation(state: AgentState):
-        messages = state["messages"].copy()
+        # Check action and reason history
         task_action_history = state["task_action_history"].copy()
         task_action_reason_history = state["task_action_reason_history"].copy()
-        if task_action_history and task_action_reason_history:
-            task_router_action_history = "\n\nTask router decisions:\n\n"
-            for action, reason in zip(task_action_history, task_action_reason_history):
-                task_router_action_history += f"Action: {action}\nReason: {reason}\n\n"
-        else:
-            task_router_action_history = ""
+        task_router_action_history = "\n\nTask router decisions:\n\n"
+        for action, reason in zip(task_action_history, task_action_reason_history):
+            task_router_action_history += f"Action: {action}\nReason: {reason}\n\n"
+        print(task_router_action_history)
 
-        if len(messages) > 10:
-            summary = state["conversation_summary"]
-            summarized_conversation = summarize_conversation(
-                llm=llm.with_structured_output(ConversationSummarizerOutput),
-                summary=summary,
-                messages=messages,
-            )
-
-            print(f"Conversation Summary:\n{summarized_conversation}")
-
-            delete_messages = [RemoveMessage(id=m.id) for m in messages]
-            print(task_router_action_history)
-
-            return {
-                "conversation_summary": summarized_conversation,
-                "messages": delete_messages,
-            }
-
-        else:
-            print(task_router_action_history)
-            return {"messages": messages}
+        return {"answer": response}
 
     def initial_routing(state: AgentState) -> str:
         if state["is_conversational"].lower() == "true":
@@ -262,7 +222,6 @@ def create_multi_agents():
     workflow.add_node("initial_answer_crafter", execute_craft_initial_answer)
     workflow.add_node("response_checker", execute_check_response)
     workflow.add_node("final_answer_crafter", execute_craft_final_answer)
-    workflow.add_node("conversation_summarizer", execute_summarize_conversation)
 
     workflow.add_conditional_edges(
         "query_classifier",
@@ -292,9 +251,8 @@ def create_multi_agents():
     workflow.add_edge("initial_answer_crafter", "task_router")
     workflow.add_edge("response_checker", "task_router")
 
-    workflow.add_edge("conversation_responder", "conversation_summarizer")
-    workflow.add_edge("final_answer_crafter", "conversation_summarizer")
-    workflow.add_edge("conversation_summarizer", END)
+    workflow.add_edge("conversation_responder", END)
+    workflow.add_edge("final_answer_crafter", END)
 
     workflow.set_entry_point("query_classifier")
 
@@ -303,7 +261,7 @@ def create_multi_agents():
     return app
 
 
-def main():
+async def main():
     import uuid
 
     session_id = uuid.uuid4().hex[:8]
@@ -311,31 +269,46 @@ def main():
 
     graph = create_multi_agents()
 
-    query = "what is agentic ai?"
+    session_messages = []
 
-    state = {
-        "messages": [HumanMessage(content=query)],
-        "query": query,
-        "rewritten_query": "",
-        "kb_context": "",
-        "web_context": "",
-        "answer": "",
-        "response_check": "",
-        "conversation_summary": "",
-        "current_step": "",
-        "task_action_history": [],
-        "task_action_reason_history": [],
-        "is_conversational": "",
-    }
+    while True:
 
-    response = graph.invoke(input=state, config=config)
-    message = response["messages"][-1]
-    if isinstance(message, AIMessage):
-        print(message.content)
+        query = input("Query: ").strip()
+
+        if query.lower() == "q":
+            print(graph.get_state(config).values)
+            break
+
+        session_messages.append(HumanMessage(content=query))
+
+        state = {
+            "messages": session_messages,
+            "query": query,
+            "rewritten_query": "",
+            "kb_context": "",
+            "web_context": "",
+            "answer": "",
+            "response_check": "",
+            "current_step": "",
+            "task_action_history": [],
+            "task_action_reason_history": [],
+            "is_conversational": "",
+        }
+
+        full_response = ""
+        async for msg, metadata in graph.astream(
+            input=state, config=config, stream_mode="messages"
+        ):
+            if msg.content:
+                full_response += msg.content
+                print(msg.content, end="", flush=True)
+        print()
+
+        session_messages.append(AIMessage(content=full_response))
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
 
     # # Visualize the graph
     # graph = create_multi_agents()
@@ -346,7 +319,7 @@ if __name__ == "__main__":
     #         )
     #     )
     #
-    #     with open("./graph_visualization.png", "wb") as f:
+    #     with open("./assets/graph_visualization.png", "wb") as f:
     #         f.write(img.data)
     # except Exception:
     #     pass

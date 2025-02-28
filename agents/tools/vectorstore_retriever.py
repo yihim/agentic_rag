@@ -37,7 +37,7 @@ def milvus_retriever(query: str) -> Optional[MilvusRetrieveOutput]:
         search_result = milvus_client.search(
             collection_name=MILVIUS_COLLECTION_NAME,
             data=embed_text(embedding_model=embedding_model, data=[query]),
-            limit=int(0.1 * total_data_stored),
+            limit=20,
             search_params={"metric_type": "IP", "params": {}},
             output_fields=["text"],
         )

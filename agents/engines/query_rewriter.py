@@ -17,7 +17,6 @@ def rewrite_query(
     llm,
     query: str,
     chat_history: List[Union[HumanMessage, AIMessage]],
-    conversation_summary: str,
 ):
     print("-" * 20, "REWRITE QUERY", "-" * 20)
     prompt = ChatPromptTemplate.from_messages(("system", QUERY_REWRITER_SYSTEM_PROMPT))
@@ -28,7 +27,6 @@ def rewrite_query(
         {
             "query": query,
             "chat_history": chat_history,
-            "conversation_summary": conversation_summary,
         }
     )
 
@@ -46,7 +44,6 @@ if __name__ == "__main__":
 
     query = "I'm having trouble understanding the recent changes in our company's HR policies, especially regarding the new remote work procedures and benefits adjustments. Can you explain what has changed and how these updates might affect my daily workflow?"
     chat_history = [HumanMessage(content=query)]
-    conversation_summary = ""
 
     start = perf_counter()
     print(
@@ -54,7 +51,6 @@ if __name__ == "__main__":
             llm=query_writer_llm,
             query=query,
             chat_history=chat_history,
-            conversation_summary=conversation_summary,
         )
     )
     print(f"{perf_counter() - start:.2f} seconds.")
