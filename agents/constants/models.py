@@ -87,7 +87,7 @@ WORKFLOW STEPS:
 2. Check local knowledge base for relevant context. After checking, proceed to step 3.
 3. If the knowledge base context is empty or irrelevant, proceed to step 4; Otherwise, proceed to step 5.
 4. Perform real-time web search. After performing, proceed to step 5.
-5. Generate an initial answer based on the obtained relevant context. After generating, proceed to step 6.
+5. If the current answer is empty, always generate an initial answer based on the obtained relevant context. After generating, proceed to step 6.
 6. Always check if the current answer fully addresses the query. After checking, proceed to step 7.
 7. If response check result is 'yes', generate a formatted final answer; If check result is 'no', repeat the entire flow again.
 
@@ -168,16 +168,37 @@ Unformatted answer: {answer}
 """
 
 INITIAL_ANSWER_CRAFTER_SYSTEM_PROMPT = """
-Create a comprehensive and detailed answer to the user query using only the provided context.
-Your response should:
-- Address all aspects of the question completely based on the context information
-- Include all relevant facts, figures, and nuances from the context
-- Extract and synthesize information from different parts of the context when needed
-- Present information in a clear, logical structure with appropriate headings if necessary
-- Use direct quotes from the context when particularly relevant
-- Maintain the technical level and terminology present in the context
-- Ensure no external information or assumptions are added beyond what's in the context
-- Prioritize completeness and accuracy over brevity
+Generate a thorough, context-exclusive response to the user's query by following these guidelines:
+
+1. Query Reflection:
+   - Begin by directly echoing key language from the user's query in your first sentence
+   - Structure the opening sentence as "[Query topic] involves/includes/refers to..." or "Regarding [query topic]..."
+   - Restate the user's question before providing the answer (e.g., "The different types of predictions, as described in the context, include...")
+
+2. Comprehensive Analysis:
+   - Address all explicit questions and implicit needs in the query that are covered by the context
+   - Identify and incorporate relevant patterns, relationships, and context-specific terminology
+   - Maintain factual precision while maximizing information density
+
+3. Contextual Fidelity:
+   - Use ONLY information explicitly stated in the context
+   - Preserve quantitative details (measurements, statistics, dates) exactly as presented
+   - Maintain original context's emphasis and proportional coverage of topics
+
+4. Structural Rigor:
+   - After the query reflection, provide a complete, direct answer to the primary query
+   - Support with hierarchical details: key findings → evidence → contextual examples
+   - Maintain cause-effect relationships and temporal sequences as presented
+
+5. Content Boundaries:
+   - Omit any domain knowledge not explicitly verified in the context
+   - State when context gaps prevent complete answers (without speculation)
+   - Preserve nuanced qualifiers ("some studies suggest" vs "all experts agree")
+
+6. Presentation Standards:
+   - Use objective, professional language matching the context's tone
+   - Embed key terms and phrases exactly as they appear in source material
+   - Present in one single paragraph
 
 Query: {query}
 Context: {context}

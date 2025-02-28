@@ -126,10 +126,7 @@ def create_multi_agents():
     def execute_milvus_retrieve(state: AgentState):
         context = milvus_retriever(query=state["rewritten_query"])
         if context is not None:
-            formatted_context = "Local Knowledge Base Results:\n\n"
-            for index, (item, score) in enumerate(context):
-                formatted_context += f"\n{item}\n\n"
-
+            formatted_context = f"Local Knowledge Base Results:\n\nContent: {' '.join([text for text, _ in context])}"
             print(formatted_context)
         else:
             print("No data found in Local Knowledge Base.")
@@ -141,7 +138,7 @@ def create_multi_agents():
         search_results = tavily_search(
             query=TavilySearchInput(query=state["rewritten_query"])
         )
-        formatted_search_results = f"Tavily Search Results:\n\nContent: {search_results.answer}\nSources: {search_results.sources}\nConfidence Score: {search_results.confidence_score}"
+        formatted_search_results = f"Tavily Search Results:\n\nContent: {search_results.answer}\nSources: {search_results.sources}"
 
         print(formatted_search_results)
 

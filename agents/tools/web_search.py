@@ -57,5 +57,5 @@ if __name__ == "__main__":
     search_input = TavilySearchInput(query=query)
 
     result = tavily_search(search_input)
-    formatted_search_results = f"Tavily Search Results:\n\nContent: {result.answer}\nSources: {result.sources}\nConfidence Score: {result.confidence_score}"
+    formatted_search_results = f"Tavily Search Results:\n\nContent: {result.answer}\nSources: {result.sources}"
     print(formatted_search_results)
