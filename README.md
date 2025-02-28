@@ -1,4 +1,5 @@
 # Multi-Agent Agentic RAG (Local)
+![Graph Structure](./assets/graph_visualization.png)
 
 ## Prerequisites
 
