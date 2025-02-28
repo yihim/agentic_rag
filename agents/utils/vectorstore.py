@@ -67,12 +67,10 @@ def clean_text_to_json(text):
 
     # Add non-header content if it exists and has valid content
     if non_header_content and any(
-            line.strip()[-1] in string.punctuation or ".jpg" in line
-            for line in non_header_content
+        line.strip()[-1] in string.punctuation or ".jpg" in line
+        for line in non_header_content
     ):
-        json_output.append(
-            {"header": "None", "content": "\n".join(non_header_content)}
-        )
+        json_output.append({"header": "None", "content": "\n".join(non_header_content)})
 
     # Convert to JSON with ensure_ascii=False to preserve Unicode characters
     return json_output
@@ -81,9 +79,9 @@ def clean_text_to_json(text):
 def clean_references(text):
     # This pattern specifically targets academic citation patterns
     # Example: "conflict.24, 25, 26" or "performance.27"
-    citation_pattern = r'([a-zA-Z])\.\s*(\d+(?:\s*,\s*\d+)*)'
+    citation_pattern = r"([a-zA-Z])\.\s*(\d+(?:\s*,\s*\d+)*)"
 
     # Replace with just the word followed by a period
-    cleaned_text = re.sub(citation_pattern, r'\1.', text)
+    cleaned_text = re.sub(citation_pattern, r"\1.", text)
 
     return cleaned_text
