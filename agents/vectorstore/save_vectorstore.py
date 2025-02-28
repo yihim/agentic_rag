@@ -400,7 +400,9 @@ if __name__ == "__main__":
     )
 
     if process_mode == "hf":
-        llm_and_tokenizer = load_llm_and_tokenizer(llm_name=QWEN_14B_INSTRUCT, device=device)
+        llm_and_tokenizer = load_llm_and_tokenizer(
+            llm_name=QWEN_14B_INSTRUCT, device=device
+        )
 
         start = perf_counter()
 
