@@ -11,15 +11,17 @@ class TaskRouterAction(BaseModel):
     action: Literal[
         "query_rewriter",
         "milvus_retriever",
+        "tavily_searcher",
         "initial_answer_crafter",
         "response_checker",
+        "final_answer_crafter",
     ] = Field(..., description="The next action to take in the workflow.")
     reasoning: str = Field(..., description="Reasoning behind the action decision.")
 
 
-task_router_llm = load_chat_model()
-
-task_router_llm = task_router_llm.with_structured_output(TaskRouterAction)
+# task_router_llm = load_chat_model()
+#
+# task_router_llm = task_router_llm.with_structured_output(TaskRouterAction)
 
 
 def router_action(
@@ -31,7 +33,7 @@ def router_action(
     web_context: str,
     answer: str,
     response_check: str,
-    task_history: List[str],
+    task_action_history: List[str],
 ):
     print("-" * 20, "ROUTER ACTION", "-" * 20)
     prompt = ChatPromptTemplate.from_messages(("system", TASK_ROUTER_SYSTEM_PROMPT))
@@ -47,7 +49,7 @@ def router_action(
             "web_context": web_context,
             "answer": answer,
             "response_check": response_check,
-            "task_history": task_history,
+            "task_action_history": task_action_history,
         }
     )
 

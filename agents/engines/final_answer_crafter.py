@@ -11,13 +11,6 @@ class FinalAnswerCrafterOutput(BaseModel):
     markdown_ans: str = Field(..., description="The markdown formatted answer.")
 
 
-final_answer_crafter_llm = load_chat_model()
-
-final_answer_crafter_llm = final_answer_crafter_llm.with_structured_output(
-    FinalAnswerCrafterOutput
-)
-
-
 def craft_final_answer(llm, answer: str):
     print("-" * 20, "CRAFT FINAL ANSWER", "-" * 20)
     prompt = ChatPromptTemplate.from_messages(
@@ -35,6 +28,12 @@ if __name__ == "__main__":
     # Test final answer crafter
     root_dir = Path(__file__).parent.parent.parent
     os.chdir(root_dir)
+
+    final_answer_crafter_llm = load_chat_model()
+
+    final_answer_crafter_llm = final_answer_crafter_llm.with_structured_output(
+        FinalAnswerCrafterOutput
+    )
 
     answer = "To reset your forgotten email password, go to the login page and click on 'Forgot Password'. Enter your registered email address, complete any CAPTCHA or verification steps, and then check your inbox for a reset link. Follow the instructions in the email to create a new password."
     start = perf_counter()

@@ -44,7 +44,7 @@ def milvus_retriever(query: str) -> Optional[MilvusRetrieveOutput]:
         res_with_distance = [
             (res["entity"]["text"], res["distance"])
             for res in search_result[0]
-            if res["distance"] > 0.5
+            if res["distance"] > 0.7
         ]
         if res_with_distance:
             pprint(f"{len(res_with_distance)} results found for query: {query}")
@@ -59,10 +59,10 @@ def milvus_retriever(query: str) -> Optional[MilvusRetrieveOutput]:
 
 if __name__ == "__main__":
     # Test search vector store
-    query = "What is this document about?"
+    query = "What is agentic AI and how does it work?"
     results = milvus_retriever(query=query)
     if results is not None:
         formatted_context = "Local Knowledge Base Results:\n\n"
         for index, (item, score) in enumerate(results):
-            formatted_context += f"{index + 1}.\n{item}\nConfidence Score: {score * 100:.2f}%\n\n"
+            formatted_context += f"\n{item}\n\n"
         print(formatted_context)

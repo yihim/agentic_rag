@@ -8,14 +8,10 @@ import os
 
 
 class QueryClassifierOutput(BaseModel):
-    is_conversational: str = Field(..., description="This field must contain 'true' if the query is conversational, or 'false' if it requires information retrieval.")
-
-
-query_classifier_llm = load_chat_model()
-
-query_classifier_llm = query_classifier_llm.with_structured_output(
-    QueryClassifierOutput
-)
+    is_conversational: str = Field(
+        ...,
+        description="This field must contain 'true' if the query is conversational, or 'false' if it requires information retrieval.",
+    )
 
 
 def classify_query(llm, query: str):
@@ -35,10 +31,13 @@ if __name__ == "__main__":
     root_dir = Path(__file__).parent.parent.parent
     os.chdir(root_dir)
 
+    query_classifier_llm = load_chat_model()
+
+    query_classifier_llm = query_classifier_llm.with_structured_output(
+        QueryClassifierOutput
+    )
+
     query = "What are some effective strategies for improving productivity while working from home?"
     start = perf_counter()
-    print(
-        classify_query(
-            llm=query_classifier_llm, query=query)
-    )
+    print(classify_query(llm=query_classifier_llm, query=query))
     print(f"{perf_counter()- start:.2f} seconds.")

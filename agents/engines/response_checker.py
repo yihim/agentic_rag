@@ -14,15 +14,6 @@ class ResponseCheckerOutput(BaseModel):
     )
 
 
-client = load_chat_model()
-
-response_checker_llm = load_chat_model()
-
-response_checker_llm = response_checker_llm.with_structured_output(
-    ResponseCheckerOutput
-)
-
-
 def check_response(llm, query: str, answer: str):
     print("-" * 20, "CHECK RESPONSE", "-" * 20)
     prompt = ChatPromptTemplate.from_messages(
@@ -40,6 +31,12 @@ if __name__ == "__main__":
     # Test response checker
     root_dir = Path(__file__).parent.parent.parent
     os.chdir(root_dir)
+
+    response_checker_llm = load_chat_model()
+
+    response_checker_llm = response_checker_llm.with_structured_output(
+        ResponseCheckerOutput
+    )
 
     query = "How do I reset my forgotten email password?"
     yes_answer = "To reset your forgotten email password, go to the login page and click on 'Forgot Password'. Enter your registered email address, complete any CAPTCHA or verification steps, and then check your inbox for a reset link. Follow the instructions in the email to create a new password."

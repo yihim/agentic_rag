@@ -7,18 +7,14 @@ import os
 from typing import List, Union
 from langchain_core.messages import HumanMessage, AIMessage
 
+
 class ConversationSummarizerOutput(BaseModel):
     summary: str = Field(..., description="The conversation summary.")
 
 
-conversation_summarizer_llm = load_chat_model()
-
-conversation_summarizer_llm = conversation_summarizer_llm.with_structured_output(
-    ConversationSummarizerOutput
-)
-
-
-def summarize_conversation(llm, summary: str, messages: List[Union[HumanMessage, AIMessage]]):
+def summarize_conversation(
+    llm, summary: str, messages: List[Union[HumanMessage, AIMessage]]
+):
     print("-" * 20, "SUMMARIZE CONVERSATION", "-" * 20)
 
     if summary:
@@ -39,14 +35,34 @@ if __name__ == "__main__":
     # Test conversation summarizer
     root_dir = Path(__file__).parent.parent.parent
     os.chdir(root_dir)
+
+    conversation_summarizer_llm = load_chat_model()
+
+    conversation_summarizer_llm = conversation_summarizer_llm.with_structured_output(
+        ConversationSummarizerOutput
+    )
+
     summary = "We discussed your work involving models like .gguf and Llama.cpp, focusing on optimizing performance and comparing different frameworks like Hugging Face. You're interested in serving models efficiently, especially using quantized variants for speed enhancements."
-    messages = [HumanMessage(content="I haven’t experimented with custom agent behaviors yet, but I’m thinking about creating specialized agents for different types of tasks. Any best practices?"),
-                AIMessage(content="That’s a great approach! Best practices include defining clear scopes for each agent, implementing a fallback mechanism if an agent fails, and using memory efficiently to maintain context across interactions. Do you plan to use LangGraph for more structured workflows?"),
-                HumanMessage(content="Yes, I want to use LangGraph to create a decision tree where agents can escalate tasks if needed. Any thoughts on optimizing this?"),
-                AIMessage(content="Using LangGraph for hierarchical task escalation is a solid strategy. To optimize, you might want to:\n1. Use a shared state to track agent decisions.\n2. Implement a priority queue for urgent tasks.\n3. Log interactions to refine agent routing over time.\n\nWould you like an example of how to structure this?"),
-                HumanMessage(content="That would be helpful! Also, do you think vector search with Milvus could assist in task assignment?"),
-                AIMessage(content="Yes! You could store agent expertise embeddings in Milvus and perform similarity searches to assign the most relevant agent dynamically. This would enhance scalability and adaptability. Do you have a specific embedding model in mind?")
-                ]
+    messages = [
+        HumanMessage(
+            content="I haven’t experimented with custom agent behaviors yet, but I’m thinking about creating specialized agents for different types of tasks. Any best practices?"
+        ),
+        AIMessage(
+            content="That’s a great approach! Best practices include defining clear scopes for each agent, implementing a fallback mechanism if an agent fails, and using memory efficiently to maintain context across interactions. Do you plan to use LangGraph for more structured workflows?"
+        ),
+        HumanMessage(
+            content="Yes, I want to use LangGraph to create a decision tree where agents can escalate tasks if needed. Any thoughts on optimizing this?"
+        ),
+        AIMessage(
+            content="Using LangGraph for hierarchical task escalation is a solid strategy. To optimize, you might want to:\n1. Use a shared state to track agent decisions.\n2. Implement a priority queue for urgent tasks.\n3. Log interactions to refine agent routing over time.\n\nWould you like an example of how to structure this?"
+        ),
+        HumanMessage(
+            content="That would be helpful! Also, do you think vector search with Milvus could assist in task assignment?"
+        ),
+        AIMessage(
+            content="Yes! You could store agent expertise embeddings in Milvus and perform similarity searches to assign the most relevant agent dynamically. This would enhance scalability and adaptability. Do you have a specific embedding model in mind?"
+        ),
+    ]
     # summary = ""
     # messages = [HumanMessage(content="Hey, I'm working on deploying a .gguf model with Llama.cpp. Any tips on improving performance?"),
     #             AIMessage(content="Absolutely! For optimal performance, ensure your CUDA settings are configured correctly, and consider using a 4-bit quantized version of Llama-3.2-11B-Vision-Instruct."),
@@ -61,6 +77,7 @@ if __name__ == "__main__":
     start = perf_counter()
     print(
         summarize_conversation(
-            llm=conversation_summarizer_llm, summary=summary, messages=messages)
+            llm=conversation_summarizer_llm, summary=summary, messages=messages
+        )
     )
     print(f"{perf_counter()- start:.2f} seconds.")

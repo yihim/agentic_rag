@@ -10,7 +10,7 @@ from transformers import (
 from typing import Tuple, List
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
-from agents.constants.models import VLLM_BASE_URL, VLLM_MODEL
+from agents.constants.models import VLLM_BASE_URL, VLLM_MODEL, LLM_MAX_TOKENS
 import os
 
 load_dotenv()
@@ -79,8 +79,7 @@ def load_chat_model() -> ChatOpenAI:
         api_key=os.getenv("VLLM_API_KEY"),
         model=VLLM_MODEL,
         verbose=True,
+        max_tokens=LLM_MAX_TOKENS,
         request_timeout=None,
-        model_kwargs={"stream": True},
-        stream_usage=True,
         max_retries=3,
     )
