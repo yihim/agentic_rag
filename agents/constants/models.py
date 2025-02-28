@@ -85,11 +85,11 @@ Your responsibilities include:
 WORKFLOW STEPS:
 1. Rewrite incoming query to optimize for search effectiveness. After rewriting, proceed to step 2.
 2. Check local knowledge base for relevant context. After checking, proceed to step 3.
-3. If the knowledge base context is empty, proceed to step 4; Otherwise, proceed to step 5.
-4. If the knowledge base context is empty, perform real-time web search. After performing, proceed to step 5.
+3. If the knowledge base context is empty or irrelevant, proceed to step 4; Otherwise, proceed to step 5.
+4. If the knowledge base context is empty or irrelevant, perform real-time web search. After performing, proceed to step 5.
 5. Generate an initial answer. After generating, proceed to step 6.
 6. Always check if the current answer fully addresses the query. After checking, proceed to step 7.
-7. If response check result is 'yes', generate a formatted final answer; If check result is 'no', REPEAT from step 1 again.
+7. If response check result is 'yes', generate a formatted final answer; If check result is 'no', repeat the entire flow again.
 
 Based on the current state and task history, determine the next action to take.
 
@@ -103,10 +103,10 @@ Response check result: {response_check}
 Task action history: {task_action_history}
 
 Actions:
-1. query_rewriter - Rewrite the current query
-2. milvus_retriever - Check local knowledge base using the rewritten query
-3. tavily_searcher - Perform real-time web search if knowledge base context is empty
-4. initial_answer_crafter - Generate an initial answer based on the obtained context
+1. query_rewriter - Rewrite the current query only once, unless need to repeat the entire workflow
+2. milvus_retriever - Check local knowledge base using the rewritten query only once, unless the rewritten query has been updated
+3. tavily_searcher - Perform real-time web search if knowledge base context is empty or is not relevant
+4. initial_answer_crafter - Generate an initial answer based on the obtained context from knowledge base or web search
 5. response_checker - Check if the current answer fully addresses the query
 6. final_answer_crafter - Generate a formatted final answer
 """
