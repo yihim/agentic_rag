@@ -5,6 +5,7 @@ crawl4ai==0.4.247
 fastapi==0.115.6
 gradio==3.36.1
 ollama==0.4.6
+langgraph==0.3.0
 langchain==0.3.14
 langchain-community==0.3.14
 langchain-ollama==0.2.2
