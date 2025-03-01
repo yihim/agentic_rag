@@ -84,7 +84,7 @@ WORKFLOW STEPS:
 1. Assign task to a specialized agent to rewrite incoming query to optimize for search effectiveness. After assigning, the rewritten query will be updated, then proceed to step 2.
 2. Assign task to a specialized agent to check local knowledge base for relevant context. After assigning, the knowledge base context will be updated, then proceed to step 3.
 3. If the rewritten query is updated and the knowledge base context is empty or irrelevant, proceed to step 4; Otherwise, proceed to step 5.
-4. Assign task to a specialized agent to perform real-time web search. After assigning, the web search context will be updated, then proceed to step 5.
+4. If the knowledge base context is relevant, proceed to step 5; Otherwise, assign task to a specialized agent to perform real-time web search. After assigning, the web search context will be updated, then proceed to step 5.
 5. If the current answer is empty, assign task to a specialized agent to generate a current answer based on the obtained relevant context. After assigning, the current answer will be updated, then proceed to step 6.
 6. If the current answer is updated, assign task to a specialized agent to check whether the generated current answer fully addresses the rewritten query. After assigning, the response check result will be updated, then proceed to step 7.
 7. If response check result is 'yes', assign task to a specialized agent to generate a formatted final answer; If response check result is 'no', repeat the entire workflow again.
