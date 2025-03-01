@@ -22,8 +22,8 @@ import torch
 import shutil
 from agents.utils.vectorstore import clean_references, clean_text_to_json
 from time import perf_counter
-from llm_preprocess_data import hf_process_data
-from vllm_preprocess_data import vllm_process_data
+from agents.vectorstore.llm_preprocess_data import hf_process_data
+from agents.vectorstore.vllm_preprocess_data import vllm_process_data
 import asyncio
 from dotenv import load_dotenv
 from huggingface_hub import login
