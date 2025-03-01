@@ -104,7 +104,7 @@ Actions:
 1. query_rewriter - A specialized agent focus on rewriting the current query
 2. milvus_retriever - A specialized agent focus on checking the local knowledge base
 3. tavily_searcher - A specialized agent focus on perform real-time web search
-4. initial_answer_crafter - A specialized agent focus on generating a current answer based on the obtained context from knowledge base or web search
+4. initial_answer_crafter - A specialized agent focus on generating a current answer based on the obtained relevant context from knowledge base or web search
 5. response_checker - A specialized agent focus on checking if the generated current answer addresses the rewritten query
 6. final_answer_crafter - A specialized agent focus on generating a formatted final answer
 """
