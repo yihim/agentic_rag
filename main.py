@@ -1,4 +1,4 @@
-from typing import TypedDict, List, Union
+from typing import TypedDict, List, Union, Literal
 from langchain_core.messages import (
     HumanMessage,
     AIMessage,
@@ -45,22 +45,12 @@ class AgentState(TypedDict):
     is_conversational: str
 
 
-def create_multi_agents():
+def create_multi_agents() -> StateGraph.compile:
     memory = MemorySaver()
 
     llm = load_chat_model()
 
-    def execute_classify_query(state: AgentState):
-
-        state["rewritten_query"] = ""
-        state["kb_context"] = ""
-        state["web_context"] = ""
-        state["answer"] = ""
-        state["response_check"] = ""
-        state["current_step"] = ""
-        state["task_action_history"] = []
-        state["task_action_reason_history"] = []
-        state["is_conversational"] = ""
+    def execute_classify_query(state: AgentState) -> dict:
 
         classify_result = classify_query(
             llm=llm.with_structured_output(QueryClassifierOutput), query=state["query"]
@@ -68,9 +58,21 @@ def create_multi_agents():
 
         print(f"Is conversational? {classify_result}")
 
-        return {"is_conversational": classify_result}
+        return {
+            "rewritten_query": "",
+            "kb_context": "",
+            "web_context": "",
+            "answer": "",
+            "response_check": "",
+            "current_step": "",
+            "task_action_history": [],
+            "task_action_reason_history": [],
+            "is_conversational": classify_result,
+        }
 
-    async def execute_respond_conversation(state: AgentState, config: RunnableConfig):
+    async def execute_respond_conversation(
+        state: AgentState, config: RunnableConfig
+    ) -> dict:
         response = await response_conversation(
             llm=llm,
             query=state["query"],
@@ -82,7 +84,7 @@ def create_multi_agents():
 
         return {"answer": response}
 
-    def task_router_node(state: AgentState):
+    def task_router_node(state: AgentState) -> dict:
         """Central task router that determines the next action"""
 
         router_result = router_action(
@@ -111,7 +113,7 @@ def create_multi_agents():
             "task_action_reason_history": task_action_reason_history,
         }
 
-    def execute_rewrite_query(state: AgentState):
+    def execute_rewrite_query(state: AgentState) -> dict:
         query = state["query"]
         rewritten = rewrite_query(
             llm=llm.with_structured_output(QueryWriterOutput),
@@ -123,10 +125,12 @@ def create_multi_agents():
 
         return {"rewritten_query": rewritten}
 
-    def execute_milvus_retrieve(state: AgentState):
+    def execute_milvus_retrieve(state: AgentState) -> dict:
         context = milvus_retriever(query=state["rewritten_query"])
         if context is not None:
-            formatted_context = f"Local Knowledge Base Results:\n\nContent: {' '.join([text for text, _ in context])}"
+            formatted_context = "Local Knowledge Base Results:\n\n"
+            for text, score in context:
+                formatted_context += text + "\n\n"
             print(formatted_context)
         else:
             print("No data found in Local Knowledge Base.")
@@ -134,7 +138,7 @@ def create_multi_agents():
 
         return {"kb_context": formatted_context}
 
-    def execute_tavily_search(state: AgentState):
+    def execute_tavily_search(state: AgentState) -> dict:
         search_results = tavily_search(
             query=TavilySearchInput(query=state["rewritten_query"])
         )
@@ -144,7 +148,7 @@ def create_multi_agents():
 
         return {"web_context": formatted_search_results}
 
-    def execute_craft_initial_answer(state: AgentState):
+    def execute_craft_initial_answer(state: AgentState) -> dict:
         query = state["rewritten_query"]
         context = state["web_context"] if state["web_context"] else state["kb_context"]
 
@@ -169,7 +173,9 @@ def create_multi_agents():
 
         return {"response_check": check_result}
 
-    async def execute_craft_final_answer(state: AgentState, config: RunnableConfig):
+    async def execute_craft_final_answer(
+        state: AgentState, config: RunnableConfig
+    ) -> dict:
         response = await craft_final_answer(
             llm=llm, answer=state["answer"], config=config
         )
@@ -186,13 +192,24 @@ def create_multi_agents():
 
         return {"answer": response}
 
-    def initial_routing(state: AgentState) -> str:
+    def initial_routing(
+        state: AgentState,
+    ) -> Literal["conversation_responder", "task_router"]:
         if state["is_conversational"].lower() == "true":
             return "conversation_responder"
         else:
             return "task_router"
 
-    def get_next_task(state: AgentState):
+    def get_next_task(
+        state: AgentState,
+    ) -> Literal[
+        "query_rewriter",
+        "milvus_retriever",
+        "tavily_searcher",
+        "initial_answer_crafter",
+        "response_checker",
+        "final_answer_crafter",
+    ]:
         current_step = state["current_step"]
 
         if current_step == "query_rewriter":

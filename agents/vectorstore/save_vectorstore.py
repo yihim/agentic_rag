@@ -315,26 +315,34 @@ def save_data_to_vectorstore(
             unit="Data",
         ) as pbar:
             for item in organized_data:
-                # header = (
-                #     f"Header: {item['header'].capitalize()}\n"
-                #     if item["header"] != "None"
-                #     else ""
-                # )
+                header = (
+                    f"Header: {item['header'].capitalize()}\n"
+                    if item["header"] != "None"
+                    else ""
+                )
 
-                if "table" in item.keys():
-                    # page_content = (
-                    #     f"{header}Table: {item['table']}\nText: {item['text']}"
-                    # )
-                    docs.append(item['text'])
+                # if "table" in item.keys():
+                #     page_content = (
+                #         f"{header}Table: {item['table']}\nText: {item['text']}"
+                #     )
+                #     docs.append(page_content)
+                #
+                # else:
+                #     if isinstance(item["text"], list):
+                #         for text in item["text"]:
+                #             page_content = f"{header}Text: {text}"
+                #             docs.append(page_content)
+                #     else:
+                #         page_content = f"{header}Text: {item['text']}"
+                #         docs.append(page_content)
 
+                if isinstance(item["text"], list):
+                    for text in item["text"]:
+                        page_content = f"{header}Text: {text}"
+                        docs.append(page_content)
                 else:
-                    if isinstance(item["text"], list):
-                        for text in item["text"]:
-                            # page_content = f"{header}Text: {text}"
-                            docs.append(text)
-                    else:
-                        # page_content = f"{header}Text: {item['text']}"
-                        docs.append(item['text'])
+                    page_content = f"{header}Text: {item['text']}"
+                    docs.append(page_content)
 
                 pbar.update(1)
 

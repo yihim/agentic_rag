@@ -44,7 +44,7 @@ def milvus_retriever(query: str) -> Optional[MilvusRetrieveOutput]:
         res_with_distance = [
             (res["entity"]["text"], res["distance"])
             for res in search_result[0]
-            if res["distance"] > 0.5
+            if res["distance"] > 0.7
         ]
         if res_with_distance:
             pprint(f"{len(res_with_distance)} results found for query: {query}")
@@ -62,5 +62,7 @@ if __name__ == "__main__":
     query = "what are the types of predictions"
     results = milvus_retriever(query=query)
     if results is not None:
-        formatted_context = f"Local Knowledge Base Results:\n\nContent: {' '.join([text for text, _ in results])}"
+        formatted_context = "Local Knowledge Base Results:\n\n"
+        for text, score in results:
+            formatted_context += text + "\n\n"
         print(formatted_context)
