@@ -3,6 +3,9 @@ from langchain_core.messages import (
     HumanMessage,
     AIMessage,
 )
+from sentence_transformers import SentenceTransformer
+from agents.constants.models import EMBEDDING_MODEL
+import torch
 from agents.engines.initial_answer_crafter import (
     InitialAnswerCrafterOutput,
     craft_initial_answer,
@@ -30,6 +33,8 @@ import langchain
 
 # langchain.debug = True
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
 
 class AgentState(TypedDict):
     messages: List[Union[HumanMessage, AIMessage]]
@@ -45,7 +50,7 @@ class AgentState(TypedDict):
     is_conversational: str
 
 
-def create_multi_agents() -> StateGraph.compile:
+def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.compile:
     memory = MemorySaver()
 
     llm = load_chat_model()
@@ -126,7 +131,7 @@ def create_multi_agents() -> StateGraph.compile:
         return {"rewritten_query": rewritten}
 
     def execute_milvus_retrieve(state: AgentState) -> dict:
-        context = milvus_retriever(query=state["rewritten_query"])
+        context = milvus_retriever(query=state["rewritten_query"], embedding_model=embedding_model)
         if context is not None:
             formatted_context = "Local Knowledge Base Results:\n\n"
             for text, score in context:
@@ -281,7 +286,11 @@ async def main():
     session_id = uuid.uuid4().hex[:8]
     config = {"configurable": {"thread_id": session_id}}
 
-    graph = create_multi_agents()
+    embedding_model = SentenceTransformer(
+        model_name_or_path=EMBEDDING_MODEL, device=device, trust_remote_code=True
+    )
+
+    graph = create_multi_agents(embedding_model=embedding_model)
 
     session_messages = []
 

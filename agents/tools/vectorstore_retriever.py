@@ -11,10 +11,6 @@ from typing import List, Optional, Tuple
 data_source = "pdf"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-embedding_model = SentenceTransformer(
-    model_name_or_path=EMBEDDING_MODEL, device=device, trust_remote_code=True
-)
-
 
 class MilvusRetrieveOutput(BaseModel):
     context: List[Tuple[str, float]] = Field(
@@ -22,7 +18,7 @@ class MilvusRetrieveOutput(BaseModel):
     )
 
 
-def milvus_retriever(query: str) -> Optional[MilvusRetrieveOutput]:
+def milvus_retriever(query: str, embedding_model: SentenceTransformer) -> Optional[MilvusRetrieveOutput]:
     try:
         print("-" * 20, "MILVUS RETRIEVER", "-" * 20)
         milvus_client = MilvusClient(uri=MILVIUS_ENDPOINT)
@@ -59,8 +55,13 @@ def milvus_retriever(query: str) -> Optional[MilvusRetrieveOutput]:
 
 if __name__ == "__main__":
     # Test search vector store
+
+    embedding_model = SentenceTransformer(
+        model_name_or_path=EMBEDDING_MODEL, device=device, trust_remote_code=True
+    )
+
     query = "what are the types of predictions"
-    results = milvus_retriever(query=query)
+    results = milvus_retriever(query=query, embedding_model=embedding_model)
     if results is not None:
         formatted_context = "Local Knowledge Base Results:\n\n"
         for text, score in results:
