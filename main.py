@@ -131,7 +131,9 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
         return {"rewritten_query": rewritten}
 
     def execute_milvus_retrieve(state: AgentState) -> dict:
-        context = milvus_retriever(query=state["rewritten_query"], embedding_model=embedding_model)
+        context = milvus_retriever(
+            query=state["rewritten_query"], embedding_model=embedding_model
+        )
         if context is not None:
             formatted_context = "Local Knowledge Base Results:\n\n"
             for text, score in context:
