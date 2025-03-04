@@ -40,7 +40,6 @@ Ensure you are in the root directory before executing the following command:
 ```bash
 docker-compose up --build -d
 ```
-- `-d` runs the containers in detached mode.  
 
 ---
 
