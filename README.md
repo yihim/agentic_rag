@@ -62,17 +62,3 @@ docker system prune -a
 ```
 
 ---
-
-## **Troubleshooting**
-### ❌ **Docker container fails to start**  
-- Run `docker-compose logs` to check for errors.  
-- Ensure your `.env` file is properly configured.  
-
-### ❌ **Port conflicts**  
-- Check if the required ports are already in use by running:  
-  ```bash
-  netstat -anp | grep LISTEN
-  ```
-- Modify `docker-compose.yml` to use a different port if needed.  
-
----
