@@ -1,11 +1,6 @@
 __pycache__
 .idea
 .ipynb
-.gradio
 .env
 data
-pdf_data
-pdf_tmp
-web_tmp
-milvus_volumes
 notes

@@ -1,29 +1,29 @@
 import os
-from agents.constants.models import (
+from constants.models import (
     EMBEDDING_MODEL,
     QWEN_14B_INSTRUCT,
     TABLE_ORGANIZER_LLM_SYSTEM_PROMPT,
     AGENTIC_CHUNKER_LLM_SYSTEM_PROMPT,
     LLM_MAX_TOKENS,
 )
-from agents.constants.vectorstore import (
-    MILVIUS_ENDPOINT,
-    MILVIUS_COLLECTION_NAME,
+from constants.vectorstore import (
+    MILVUS_ENDPOINT,
+    MILVUS_COLLECTION_NAME,
 )
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
 )
-from agents.utils.models import load_llm_and_tokenizer, set_random_seed, embed_text
-from typing import Tuple, Optional, List
+from utils.models import load_llm_and_tokenizer, embed_text
+from typing import Tuple, Optional
 import requests
 from tqdm import tqdm
 import torch
 import shutil
-from agents.utils.vectorstore import clean_references, clean_text_to_json
+from utils.vectorstore import clean_references, clean_text_to_json
 from time import perf_counter
-from agents.vectorstore.llm_preprocess_data import hf_process_data
-from agents.vectorstore.vllm_preprocess_data import vllm_process_data
+from llm_process_data.hf_llm_preprocess_data import process_data as hf_process_data
+from llm_process_data.vllm_preprocess_data import process_data as vllm_process_data
 import asyncio
 from dotenv import load_dotenv
 from huggingface_hub import login
@@ -40,14 +40,17 @@ from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig
 import uuid
 from pathlib import Path
 import warnings
+from constants.mineru import MINERU_URL
+import logging
+
+logger = logging.getLogger(__name__)
 
 warnings.filterwarnings("ignore")
 
-milvus_client = MilvusClient(uri=MILVIUS_ENDPOINT)
+milvus_client = MilvusClient(uri=MILVUS_ENDPOINT)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 load_dotenv()
-login(os.getenv("HF_TOKEN_WRITE"), add_to_git_credential=True)
-set_random_seed(42)
+login(os.getenv("HF_TOKEN_WRITE"))
 root_dir = Path.cwd()
 
 
@@ -60,30 +63,28 @@ def clean_and_organize_external_data(
 ):
 
     md_dir = (
-        os.path.join(root_dir, f"data_extracted/pdf_tmp/md/{file_name_without_ext}.md")
+        os.path.join(root_dir, f"pdf_tmp/md/{file_name_without_ext}.md")
         if data_source == "pdf"
-        else os.path.join(
-            root_dir, f"data_extracted/web_tmp/{file_name_without_ext}.md"
-        )
+        else os.path.join(root_dir, f"web_tmp/{file_name_without_ext}.md")
     )
 
     with open(md_dir, "r", encoding="utf-8") as f:
         extracted_data = f.read()
 
-    print("Cleaning extracted data...")
+    logger.info("Cleaning extracted data...")
 
     cleaned_references = clean_references(extracted_data)
 
     cleaned_data = clean_text_to_json(cleaned_references)
 
-    print("Cleaning completed.")
+    logger.info("Cleaning completed.")
 
     text_data = []
     table_data = []
     organized_data = []
 
-    print(f"Cleaned data:\n{cleaned_data}")
-    print("Organizing cleaned data with LLM...")
+    logger.info(f"Cleaned data:\n{cleaned_data}")
+    logger.info("Organizing cleaned data with LLM...")
 
     # Organize data for llm
     if data_source == "pdf":
@@ -163,7 +164,7 @@ def clean_and_organize_external_data(
                 batch_size=4,
             )
 
-        # print(table_data)
+        # logger.info(table_data)
 
         organized_data.extend(table_data)
 
@@ -191,33 +192,33 @@ def clean_and_organize_external_data(
                 batch_size=4,
             )
 
-        # print(text_data)
+        # logger.info(text_data)
 
         organized_data.extend(text_data)
 
-    print("Organizing completed.")
-    print(f"Organized data:\n{organized_data}")
+    logger.info("Organizing completed.")
+    logger.info(f"Organized data:\n{organized_data}")
 
     return organized_data
 
 
-def extract_pdf_data_from_source(data_path: Path) -> Tuple[int, str]:
-    file_name = os.path.basename(data_path)
-    file_name_without_ext = file_name.split(".")[0]
-    mounted_dir = root_dir / "data_extracted" / "pdf_data"
-    shutil.copy(data_path, mounted_dir)
-    print(f"Extracting PDF data from {data_path}")
-    response = requests.post(
-        "http://localhost:8000/extract", json={"file_path": f"./data/{file_name}"}
-    )
+def extract_pdf_data_from_source(
+    data_path: Path, file_name: str, file_name_without_ext: str
+) -> Tuple[int, str]:
+    # file_name = os.path.basename(data_path)
+    # file_name_without_ext = file_name.split(".")[0]
+    # mounted_dir = root_dir / "pdf_data"
+    # shutil.copy(data_path, mounted_dir)
+    logger.info(f"Extracting PDF data from {data_path}")
+    response = requests.post(MINERU_URL, json={"file_path": f"./pdf_data/{file_name}"})
     return response.status_code, file_name_without_ext
 
 
 async def extract_web_data_from_source(url: str) -> Optional[str]:
 
     md_file_name = uuid.uuid4()
-    md_dir = root_dir / "data_extracted" / "web_tmp"
-    md_dir.mkdir(parents=True, exist_ok=True)
+    md_dir = root_dir / "web_tmp"
+    # md_dir.mkdir(parents=True, exist_ok=True)
 
     browser_config = BrowserConfig(
         headless=True,
@@ -241,7 +242,7 @@ async def extract_web_data_from_source(url: str) -> Optional[str]:
     )
 
     try:
-        print(f"Extracting Web data from {url}")
+        logger.info(f"Extracting Web data from {url}")
         async with AsyncWebCrawler(config=browser_config) as crawler:
             result = await crawler.arun(
                 url=url,
@@ -253,7 +254,7 @@ async def extract_web_data_from_source(url: str) -> Optional[str]:
             )
 
             if result.success:
-                print(result.markdown_v2.fit_markdown)
+                logger.info(result.markdown_v2.fit_markdown)
                 with open(
                     os.path.join(md_dir, str(md_file_name) + ".md"),
                     "w",
@@ -262,10 +263,10 @@ async def extract_web_data_from_source(url: str) -> Optional[str]:
                     file.write(result.markdown_v2.fit_markdown)
                 return str(md_file_name)
             else:
-                print(f"Crawl failed: {result.error_message}")
+                logger.info(f"Crawl failed: {result.error_message}")
                 return None
     except Exception as e:
-        print(f"An exception occurred during crawling: {e}")
+        logger.info(f"An exception occurred during crawling: {e}")
         return None
 
 
@@ -273,39 +274,50 @@ def save_data_to_vectorstore(
     data_source: str,
     embedding_model: SentenceTransformer,
     embedding_dim: int,
-    data_path: Optional[Path] = None,
+    data_path: Optional[str] = None,
+    file_name: Optional[str] = None,
+    file_name_without_ext: Optional[str] = None,
     data_source_url: Optional[str] = None,
     llm_and_tokenizer: Optional[
         Tuple[AutoModelForCausalLM.from_pretrained, AutoTokenizer.from_pretrained]
     ] = None,
 ):
     extracted_md_file_name = None
+    if data_path:
+        data_path = Path(data_path)
 
     if data_source == "pdf" and data_path is None:
-        print("Please provide a valid path.")
-    elif data_source == "pdf" and data_path is not None:
-        response_status, file_name_without_ext = extract_pdf_data_from_source(data_path)
+        logger.info("Please provide a valid path.")
+    elif (
+        data_source == "pdf"
+        and data_path is not None
+        and file_name is not None
+        and file_name_without_ext is not None
+    ):
+        response_status, file_name_without_ext = extract_pdf_data_from_source(
+            data_path, file_name=file_name, file_name_without_ext=file_name_without_ext
+        )
         if response_status == 200:
             extracted_md_file_name = file_name_without_ext
         else:
-            print("Unexpected error occurred in data extraction process.")
+            logger.info("Unexpected error occurred in data extraction process.")
     elif data_source == "web" and data_source_url is None:
-        print("Please provide a valid url.")
+        logger.info("Please provide a valid url.")
     elif data_source == "web" and data_source_url is not None:
         file_name_without_ext = asyncio.run(
             extract_web_data_from_source(url=data_source_url)
         )
         extracted_md_file_name = file_name_without_ext
     else:
-        print("Invalid data source. ('pdf' or 'web' only)")
+        logger.info("Invalid data source. ('pdf' or 'web' only)")
 
     if extracted_md_file_name is not None:
-        print("Data extraction completed successfully.")
+        logger.info("Data extraction completed successfully.")
         organized_data = clean_and_organize_external_data(
             data_source, extracted_md_file_name, llm_and_tokenizer
         )
 
-        print("Preparing data for milvus vector store...")
+        logger.info("Preparing data for milvus vector store...")
 
         docs = []
 
@@ -346,12 +358,12 @@ def save_data_to_vectorstore(
 
                 pbar.update(1)
 
-        print(f"Prepared {len(docs)} data.")
+        logger.info(f"Prepared {len(docs)} data.")
 
-        if milvus_client.has_collection(collection_name=MILVIUS_COLLECTION_NAME):
-            milvus_client.drop_collection(collection_name=MILVIUS_COLLECTION_NAME)
+        if milvus_client.has_collection(collection_name=MILVUS_COLLECTION_NAME):
+            milvus_client.drop_collection(collection_name=MILVUS_COLLECTION_NAME)
         milvus_client.create_collection(
-            collection_name=MILVIUS_COLLECTION_NAME,
+            collection_name=MILVUS_COLLECTION_NAME,
             dimension=embedding_dim,
             consistency_level="Strong",
             metric_type="IP",
@@ -367,76 +379,77 @@ def save_data_to_vectorstore(
             )
 
         res = milvus_client.insert(
-            collection_name=MILVIUS_COLLECTION_NAME, data=data_to_store
+            collection_name=MILVUS_COLLECTION_NAME, data=data_to_store
         )
-        print(
-            f"Saved data into milvus vector store under collection_name as {MILVIUS_COLLECTION_NAME}."
+        logger.info(
+            f"Saved data into milvus vector store under collection_name as {MILVUS_COLLECTION_NAME}."
         )
-        print(res)
+        logger.info(res)
     else:
-        print("Variable 'extracted_md_file_name' is None.")
+        logger.info("Variable 'extracted_md_file_name' is None.")
 
 
 if __name__ == "__main__":
 
-    root_dir = Path(__file__).resolve().parent.parent.parent
+    root_dir = Path(__file__).resolve().parent
     os.chdir(root_dir)
 
-    print(f"Current working directory: {Path.cwd()}")
+    logger.info(f"Current working directory: {Path.cwd()}")
+    print(Path.cwd())
 
-    # Test save vector store
-    embedding_model = SentenceTransformer(
-        model_name_or_path=EMBEDDING_MODEL, trust_remote_code=True, device=device
-    )
-    embedding_dim = embedding_model.get_sentence_embedding_dimension()
-
-    # Choose mode: hf / vllm
-    process_mode = "vllm"
-
-    # Choose source: pdf / web
-    data_source = "pdf"
-
-    data_path = (
-        (root_dir / "data" / "Pdf" / "2a85b52768ea5761b773be49b09d15f0b95415b0.pdf")
-        if data_source == "pdf"
-        else None
-    )
-    data_source_url = (
-        "https://qwenlm.github.io/blog/qwen2.5/#qwen25"
-        if data_source == "web"
-        else None
-    )
-
-    if process_mode == "hf":
-        llm_and_tokenizer = load_llm_and_tokenizer(
-            llm_name=QWEN_14B_INSTRUCT, device=device
-        )
-
-        start = perf_counter()
-
-        save_data_to_vectorstore(
-            data_source=data_source,
-            llm_and_tokenizer=llm_and_tokenizer,
-            embedding_model=embedding_model,
-            embedding_dim=embedding_dim,
-            data_path=data_path,
-            data_source_url=data_source_url,
-        )
-
-        print(
-            f"Total execution time for saving data into milvus vector store: {perf_counter() - start:.2f} seconds."
-        )
-    else:
-        start = perf_counter()
-
-        save_data_to_vectorstore(
-            data_source=data_source,
-            embedding_model=embedding_model,
-            embedding_dim=embedding_dim,
-            data_path=data_path,
-            data_source_url=data_source_url,
-        )
-
-        print(
-            f"Total execution time for saving data into milvus vector store: {perf_counter() - start:.2f} seconds."
-        )
+    # # Test save vector store
+    # embedding_model = SentenceTransformer(
+    #     model_name_or_path=EMBEDDING_MODEL, trust_remote_code=True, device=device
+    # )
+    # embedding_dim = embedding_model.get_sentence_embedding_dimension()
+    #
+    # # Choose mode: hf / vllm
+    # process_mode = "vllm"
+    #
+    # # Choose source: pdf / web
+    # data_source = "pdf"
+    #
+    # data_path = (
+    #     (root_dir / "data" / "Pdf" / "2a85b52768ea5761b773be49b09d15f0b95415b0.pdf")
+    #     if data_source == "pdf"
+    #     else None
+    # )
+    # data_source_url = (
+    #     "https://qwenlm.github.io/blog/qwen2.5/#qwen25"
+    #     if data_source == "web"
+    #     else None
+    # )
+    #
+    # if process_mode == "hf":
+    #     llm_and_tokenizer = load_llm_and_tokenizer(
+    #         llm_name=QWEN_14B_INSTRUCT, device=device
+    #     )
+    #
+    #     start = perf_counter()
+    #
+    #     save_data_to_vectorstore(
+    #         data_source=data_source,
+    #         llm_and_tokenizer=llm_and_tokenizer,
+    #         embedding_model=embedding_model,
+    #         embedding_dim=embedding_dim,
+    #         data_path=data_path,
+    #         data_source_url=data_source_url,
+    #     )
+    #
+    #     logger.info(
+    #         f"Total execution time for saving data into milvus vector store: {perf_counter() - start:.2f} seconds."
+    #     )
+    # else:
+    #     start = perf_counter()
+    #
+    #     save_data_to_vectorstore(
+    #         data_source=data_source,
+    #         embedding_model=embedding_model,
+    #         embedding_dim=embedding_dim,
+    #         data_path=data_path,
+    #         data_source_url=data_source_url,
+    #     )
+    #
+    #     logger.info(
+    #         f"Total execution time for saving data into milvus vector store: {perf_counter() - start:.2f} seconds."
+    #     )

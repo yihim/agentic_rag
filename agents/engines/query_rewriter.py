@@ -1,12 +1,15 @@
 from pathlib import Path
 import os
-from agents.constants.models import QUERY_REWRITER_SYSTEM_PROMPT
-from agents.utils.models import load_chat_model
+from constants.models import QUERY_REWRITER_SYSTEM_PROMPT
+from utils.models import load_chat_model
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 from time import perf_counter
 from langchain_core.messages import HumanMessage, AIMessage
 from typing import List, Union
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class QueryWriterOutput(BaseModel):
@@ -18,7 +21,8 @@ def rewrite_query(
     query: str,
     chat_history: List[Union[HumanMessage, AIMessage]],
 ):
-    print("-" * 20, "REWRITE QUERY", "-" * 20)
+    status = "-" * 20, "REWRITE QUERY", "-" * 20
+    logger.info(status)
     prompt = ChatPromptTemplate.from_messages(("system", QUERY_REWRITER_SYSTEM_PROMPT))
 
     chain = prompt | llm
@@ -46,11 +50,11 @@ if __name__ == "__main__":
     chat_history = [HumanMessage(content=query)]
 
     start = perf_counter()
-    print(
+    logger.info(
         rewrite_query(
             llm=query_writer_llm,
             query=query,
             chat_history=chat_history,
         )
     )
-    print(f"{perf_counter() - start:.2f} seconds.")
+    logger.info(f"{perf_counter() - start:.2f} seconds.")

@@ -2,7 +2,7 @@ import aiohttp
 import os
 from typing import List, Dict
 from dotenv import load_dotenv
-from agents.constants.models import (
+from constants.models import (
     VLLM_API_CHAT_COMPLETIONS_URL,
     VLLM_API_REQUEST_PAYLOAD_TEMPLATE,
 )
@@ -27,7 +27,7 @@ async def send_request(session, payload):
         return result
 
 
-async def vllm_process_data(
+async def process_data(
     data: List[Dict[str, str]], data_type: str, system_prompt: str, max_tokens: int
 ):
     print(f"Processing {len(data)} {data_type} data concurrently...")

@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from tavily import TavilyClient
 from pydantic import BaseModel, Field
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 load_dotenv()
 
@@ -57,5 +57,7 @@ if __name__ == "__main__":
     search_input = TavilySearchInput(query=query)
 
     result = tavily_search(search_input)
-    formatted_search_results = f"Tavily Search Results:\n\nContent: {result.answer}\nSources: {result.sources}"
+    formatted_search_results = (
+        f"Tavily Search Results:\n\nContent: {result.answer}\nSources: {result.sources}"
+    )
     print(formatted_search_results)

@@ -1,10 +1,13 @@
 from pathlib import Path
-from agents.constants.models import QUERY_CLASSIFIER_SYSTEM_PROMPT
-from agents.utils.models import load_chat_model
+from constants.models import QUERY_CLASSIFIER_SYSTEM_PROMPT
+from utils.models import load_chat_model
 from time import perf_counter
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class QueryClassifierOutput(BaseModel):
@@ -15,7 +18,8 @@ class QueryClassifierOutput(BaseModel):
 
 
 def classify_query(llm, query: str):
-    print("-" * 20, "CLASSIFY QUERY", "-" * 20)
+    status = "-" * 20, "CLASSIFY QUERY", "-" * 20
+    logger.info(status)
     prompt = ChatPromptTemplate.from_messages(
         ("system", QUERY_CLASSIFIER_SYSTEM_PROMPT)
     )
@@ -39,5 +43,5 @@ if __name__ == "__main__":
 
     query = "What are some effective strategies for improving productivity while working from home?"
     start = perf_counter()
-    print(classify_query(llm=query_classifier_llm, query=query))
-    print(f"{perf_counter()- start:.2f} seconds.")
+    logger.info(classify_query(llm=query_classifier_llm, query=query))
+    logger.info(f"{perf_counter()- start:.2f} seconds.")

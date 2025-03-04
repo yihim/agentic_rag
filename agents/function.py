@@ -4,32 +4,36 @@ from langchain_core.messages import (
     AIMessage,
 )
 from sentence_transformers import SentenceTransformer
-from agents.constants.models import EMBEDDING_MODEL
+from constants.models import EMBEDDING_MODEL
 import torch
-from agents.engines.initial_answer_crafter import (
+from engines.initial_answer_crafter import (
     InitialAnswerCrafterOutput,
     craft_initial_answer,
 )
-from agents.engines.final_answer_crafter import (
+from engines.final_answer_crafter import (
     craft_final_answer,
 )
-from agents.engines.task_router import TaskRouterAction, router_action
-from agents.engines.query_rewriter import QueryWriterOutput, rewrite_query
-from agents.engines.response_checker import ResponseCheckerOutput, check_response
-from agents.engines.query_classifier import QueryClassifierOutput, classify_query
-from agents.engines.conversation_responder import (
+from engines.task_router import TaskRouterAction, router_action
+from engines.query_rewriter import QueryWriterOutput, rewrite_query
+from engines.response_checker import ResponseCheckerOutput, check_response
+from engines.query_classifier import QueryClassifierOutput, classify_query
+from engines.conversation_responder import (
     response_conversation,
 )
-from agents.tools.web_search import tavily_search, TavilySearchInput
-from agents.tools.vectorstore_retriever import milvus_retriever
-from agents.utils.models import load_chat_model
+from tools.web_search import tavily_search, TavilySearchInput
+from tools.vectorstore_retriever import milvus_retriever
+from utils.models import load_chat_model
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, END
 from langchain_core.runnables import RunnableConfig
-from langchain_core.runnables.graph import MermaidDrawMethod
-from IPython.display import Image
+
+# from langchain_core.runnables.graph import MermaidDrawMethod
+# from IPython.display import Image
 import asyncio
 import langchain
+import logging
+
+logger = logging.getLogger(__name__)
 
 # langchain.debug = True
 
@@ -61,7 +65,7 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
             llm=llm.with_structured_output(QueryClassifierOutput), query=state["query"]
         )
 
-        print(f"Is conversational? {classify_result}")
+        logger.info(f"Is conversational? {classify_result}")
 
         return {
             "rewritten_query": "",
@@ -85,7 +89,7 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
             config=config,
         )
 
-        print(f"\n\nConversational Response: {response}")
+        logger.info(f"\n\nConversational Response: {response}")
 
         return {"answer": response}
 
@@ -110,7 +114,9 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
         task_action_history.append(f"{current_step} → {router_result.action}")
         task_action_reason_history.append(router_result.reasoning)
 
-        print(f"Action: {router_result.action}\nReason: {router_result.reasoning}")
+        logger.info(
+            f"Action: {router_result.action}\nReason: {router_result.reasoning}"
+        )
 
         return {
             "current_step": router_result.action,
@@ -126,7 +132,7 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
             chat_history=state["messages"],
         )
 
-        print(f"Rewritten query from '{query}' to '{rewritten}'")
+        logger.info(f"Rewritten query from '{query}' to '{rewritten}'")
 
         return {"rewritten_query": rewritten}
 
@@ -138,9 +144,9 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
             formatted_context = "Local Knowledge Base Results:\n\n"
             for text, score in context:
                 formatted_context += text + "\n\n"
-            print(formatted_context)
+            logger.info(formatted_context)
         else:
-            print("No data found in Local Knowledge Base.")
+            logger.info("No data found in Local Knowledge Base.")
             formatted_context = ""
 
         return {"kb_context": formatted_context}
@@ -151,7 +157,7 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
         )
         formatted_search_results = f"Tavily Search Results:\n\nContent: {search_results.answer}\nSources: {search_results.sources}"
 
-        print(formatted_search_results)
+        logger.info(formatted_search_results)
 
         return {"web_context": formatted_search_results}
 
@@ -165,7 +171,7 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
             context=context,
         )
 
-        print(f"Initial Answer:\n{response}")
+        logger.info(f"Initial Answer:\n{response}")
 
         return {"answer": response}
 
@@ -176,7 +182,7 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
             answer=state["answer"],
         )
 
-        print(f"Is the initial answer fully addressed the query? {check_result}.")
+        logger.info(f"Is the initial answer fully addressed the query? {check_result}.")
 
         return {"response_check": check_result}
 
@@ -187,7 +193,7 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
             llm=llm, answer=state["answer"], config=config
         )
 
-        print(f"\n\nFinal Answer:\n{response}")
+        logger.info(f"\n\nFinal Answer:\n{response}")
 
         # Check action and reason history
         task_action_history = state["task_action_history"].copy()
@@ -195,7 +201,7 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
         task_router_action_history = "\n\nTask router decisions:\n\n"
         for action, reason in zip(task_action_history, task_action_reason_history):
             task_router_action_history += f"Action: {action}\nReason: {reason}\n\n"
-        print(task_router_action_history)
+        logger.info(task_router_action_history)
 
         return {"answer": response}
 
@@ -301,7 +307,7 @@ async def main():
         query = input("Query: ").strip()
 
         if query.lower() == "q":
-            print(graph.get_state(config).values)
+            logger.info(graph.get_state(config).values)
             break
 
         session_messages.append(HumanMessage(content=query))

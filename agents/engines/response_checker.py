@@ -1,10 +1,13 @@
 from pathlib import Path
 import os
-from agents.constants.models import RESPONSE_CHECKER_SYSTEM_PROMPT
-from agents.utils.models import load_chat_model
+from constants.models import RESPONSE_CHECKER_SYSTEM_PROMPT
+from utils.models import load_chat_model
 from pydantic import BaseModel, Field
 from time import perf_counter
 from langchain_core.prompts import ChatPromptTemplate
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ResponseCheckerOutput(BaseModel):
@@ -15,7 +18,8 @@ class ResponseCheckerOutput(BaseModel):
 
 
 def check_response(llm, query: str, answer: str):
-    print("-" * 20, "CHECK RESPONSE", "-" * 20)
+    status = "-" * 20, "CHECK RESPONSE", "-" * 20
+    logger.info(status)
     prompt = ChatPromptTemplate.from_messages(
         ("system", RESPONSE_CHECKER_SYSTEM_PROMPT)
     )
@@ -42,5 +46,5 @@ if __name__ == "__main__":
     yes_answer = "To reset your forgotten email password, go to the login page and click on 'Forgot Password'. Enter your registered email address, complete any CAPTCHA or verification steps, and then check your inbox for a reset link. Follow the instructions in the email to create a new password."
     no_answer = "Reset your password by contacting customer support."
     start = perf_counter()
-    print(check_response(llm=response_checker_llm, query=query, answer=no_answer))
-    print(f"{perf_counter() - start:.2f} seconds.")
+    logger.info(check_response(llm=response_checker_llm, query=query, answer=no_answer))
+    logger.info(f"{perf_counter() - start:.2f} seconds.")

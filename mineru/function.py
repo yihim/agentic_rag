@@ -12,26 +12,15 @@ import gc
 logger = logging.getLogger(__name__)
 
 
-def clear_gpu_memory():
-    """Clear GPU memory and cache"""
-    if torch.cuda.is_available():
-        # Clear PyTorch GPU cache
-        torch.cuda.empty_cache()
-
-        # Force garbage collection
-        gc.collect()
-
-        logger.info("GPU memory cleared")
-    else:
-        logger.info("No GPU available")
-
-
 def extract_data_from_source(data_path: str) -> str:
     split_file_name = os.path.basename(data_path).split(".")
     name_without_suff = split_file_name[0]
     file_type = split_file_name[1].lower()
 
-    local_image_dir, local_md_dir = f"./tmp/images/{name_without_suff}/", "./tmp/md/"
+    local_image_dir, local_md_dir = (
+        f"./pdf_tmp/images/{name_without_suff}/",
+        "./pdf_tmp/md/",
+    )
     image_dir = str(os.path.basename(local_image_dir))
 
     os.makedirs(local_md_dir, exist_ok=True)
@@ -86,7 +75,6 @@ def extract_data_from_source(data_path: str) -> str:
     finally:
         extracted_data_path = os.path.join(local_md_dir, name_without_suff + ".md")
         logger.info(f"Extracted data saved in: {extracted_data_path}")
-        clear_gpu_memory()
         return extracted_data_path
 
 

@@ -26,6 +26,9 @@ RUN conda run -n mineru pip install --no-cache-dir --default-timeout=2000 paddle
 COPY requirements.txt .
 RUN conda run -n mineru pip install -r requirements.txt
 
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 # Download models
 RUN wget https://github.com/opendatalab/MinerU/raw/master/scripts/download_models_hf.py -O download_models_hf.py && \
     conda run -n mineru python download_models_hf.py

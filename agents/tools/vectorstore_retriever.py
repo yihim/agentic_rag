@@ -1,9 +1,9 @@
 from pymilvus import MilvusClient, MilvusException
-from agents.constants.vectorstore import MILVIUS_ENDPOINT, MILVIUS_COLLECTION_NAME
+from constants.vectorstore import MILVUS_ENDPOINT, MILVUS_COLLECTION_NAME
 from sentence_transformers import SentenceTransformer
-from agents.constants.models import EMBEDDING_MODEL
+from constants.models import EMBEDDING_MODEL
 import torch
-from agents.utils.models import embed_text
+from utils.models import embed_text
 from pprint import pprint
 from pydantic import BaseModel, Field
 from typing import List, Optional, Tuple
@@ -18,20 +18,22 @@ class MilvusRetrieveOutput(BaseModel):
     )
 
 
-def milvus_retriever(query: str, embedding_model: SentenceTransformer) -> Optional[MilvusRetrieveOutput]:
+def milvus_retriever(
+    query: str, embedding_model: SentenceTransformer
+) -> Optional[MilvusRetrieveOutput]:
     try:
         print("-" * 20, "MILVUS RETRIEVER", "-" * 20)
-        milvus_client = MilvusClient(uri=MILVIUS_ENDPOINT)
-        milvus_client.flush(collection_name=MILVIUS_COLLECTION_NAME)
+        milvus_client = MilvusClient(uri=MILVUS_ENDPOINT)
+        milvus_client.flush(collection_name=MILVUS_COLLECTION_NAME)
         total_data_stored = milvus_client.get_collection_stats(
-            collection_name=MILVIUS_COLLECTION_NAME
+            collection_name=MILVUS_COLLECTION_NAME
         )["row_count"]
         print(
-            f"Total data stored for collection_name - {MILVIUS_COLLECTION_NAME} is {total_data_stored}."
+            f"Total data stored for collection_name - {MILVUS_COLLECTION_NAME} is {total_data_stored}."
         )
 
         search_result = milvus_client.search(
-            collection_name=MILVIUS_COLLECTION_NAME,
+            collection_name=MILVUS_COLLECTION_NAME,
             data=embed_text(embedding_model=embedding_model, data=[query]),
             limit=20,
             search_params={"metric_type": "IP", "params": {}},

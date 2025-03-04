@@ -1,10 +1,13 @@
 from pydantic import BaseModel, Field
-from agents.constants.models import (
+from constants.models import (
     TASK_ROUTER_SYSTEM_PROMPT,
 )
 from typing import Literal, List
-from agents.utils.models import load_chat_model
+from utils.models import load_chat_model
 from langchain_core.prompts import ChatPromptTemplate
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TaskRouterAction(BaseModel):
@@ -35,7 +38,8 @@ def router_action(
     response_check: str,
     task_action_history: List[str],
 ):
-    print("-" * 20, "ROUTER ACTION", "-" * 20)
+    status = "-" * 20, "ROUTER ACTION", "-" * 20
+    logger.info(status)
     prompt = ChatPromptTemplate.from_messages(("system", TASK_ROUTER_SYSTEM_PROMPT))
 
     chain = prompt | llm
