@@ -4,6 +4,8 @@ A multi-agent Retrieval-Augmented Generation (RAG) system that runs locally usin
 
 **Main Model :- [Qwen/Qwen2.5-14B-Instruct-AWQ](https://huggingface.co/Qwen/Qwen2.5-14B-Instruct-AWQ)**
 
+**GPU Requirement :- At least 16GB**
+
 ![Graph Structure](./assets/graph_visualization.png)
 
 ---
