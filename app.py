@@ -114,22 +114,6 @@ st.markdown(
         text-align: center;
     }
 
-    .chat-container {
-        background-color: var(--background-color);
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-        border: 1px solid var(--border-color);
-    }
-
-    .sidebar-content {
-        background-color: var(--sidebar-bg);
-        padding: 15px;
-        border-radius: 10px;
-        margin-bottom: 15px;
-        border: 1px solid var(--border-color);
-    }
-
     .stButton>button {
         width: 100%;
         border-radius: 20px;
@@ -141,14 +125,6 @@ st.markdown(
         margin-top: 2rem;
         margin-bottom: 2rem;
         border-top: 1px solid var(--border-color);
-    }
-
-    .feature-card {
-        background-color: var(--card-bg);
-        padding: 15px;
-        border-radius: 10px;
-        margin-bottom: 10px;
-        border-left: 4px solid var(--card-border);
     }
 
     .chat-message-user {
@@ -167,13 +143,6 @@ st.markdown(
         margin-bottom: 10px;
         display: inline-block;
         max-width: 80%;
-    }
-
-    /* Ensure text contrast in dark mode */
-    [data-theme="dark"] .chat-message-user,
-    [data-theme="dark"] .chat-message-ai,
-    [data-theme="dark"] .feature-card {
-        color: #E5E7EB;
     }
 
     /* Hide Streamlit elements */
@@ -206,7 +175,6 @@ st.markdown(
 col1, col2 = st.columns([3, 1])
 
 with col2:
-    st.markdown('<div class="sidebar-content">', unsafe_allow_html=True)
     st.markdown("### 📚 Knowledge Source")
 
     source_type = st.radio(
@@ -311,8 +279,6 @@ with col2:
 
 # Main chat area in the first column
 with col1:
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-
     # Display features
     if not st.session_state.messages:
         st.markdown("### 🌟 Features")
@@ -320,14 +286,12 @@ with col1:
         col_a, col_b = st.columns(2)
 
         with col_a:
-            st.markdown('<div class="feature-card">', unsafe_allow_html=True)
             st.markdown("#### 📊 Document Analysis")
             st.markdown(
                 "Upload PDFs or provide websites to extract insights and answer questions about your content."
             )
             st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown('<div class="feature-card">', unsafe_allow_html=True)
             st.markdown("#### 🔎 Smart Search")
             st.markdown(
                 "Our system finds the most relevant information from your sources."
@@ -335,14 +299,12 @@ with col1:
             st.markdown("</div>", unsafe_allow_html=True)
 
         with col_b:
-            st.markdown('<div class="feature-card">', unsafe_allow_html=True)
             st.markdown("#### 🤖 Multiple AI Agents")
             st.markdown(
                 "Specialized agents work together to provide comprehensive answers."
             )
             st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown('<div class="feature-card">', unsafe_allow_html=True)
             st.markdown("#### 💬 Natural Conversation")
             st.markdown(
                 "Chat naturally with the system about complex topics in your documents."
