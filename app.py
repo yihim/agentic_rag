@@ -3,7 +3,7 @@ import uuid
 import tempfile
 import requests
 from pathlib import Path
-from constants import AGENTS_URL, VECTORSTORE_URL
+from constants import AGENTS_URL, VECTORSTORE_URL, AGENTS_TASK_ACTION_HISTORY_URL
 import os
 import shutil
 import nest_asyncio
@@ -53,7 +53,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS for better styling
+# Custom CSS for better styling - add styling for action history
 st.markdown(
     """
 <style>
@@ -68,6 +68,7 @@ st.markdown(
         --user-msg-bg: #E3F2FD;
         --ai-msg-bg: #F3F4F6;
         --border-color: #E5E7EB;
+        --action-history-bg: #F9FAFB;
     }
 
     /* Dark theme adjustments */
@@ -82,6 +83,7 @@ st.markdown(
             --user-msg-bg: #1E40AF;
             --ai-msg-bg: #374151;
             --border-color: #4B5563;
+            --action-history-bg: #111827;
         }
     }
 
@@ -96,6 +98,7 @@ st.markdown(
         --user-msg-bg: #1E40AF;
         --ai-msg-bg: #374151;
         --border-color: #4B5563;
+        --action-history-bg: #111827;
     }
 
     /* Core styling using variables */
@@ -145,6 +148,12 @@ st.markdown(
         max-width: 80%;
     }
 
+    .action-history-container {
+        margin-left: 20px;
+        margin-bottom: 20px;
+        width: 80%;
+    }
+
     /* Hide Streamlit elements */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -161,6 +170,8 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "thread_id" not in st.session_state:
     st.session_state.thread_id = str(uuid.uuid4().hex[:8])
+if "action_history" not in st.session_state:
+    st.session_state.action_history = {}
 
 # Create enhanced header
 st.markdown(
@@ -267,6 +278,7 @@ with col2:
     2. Our system indexes your content for fast retrieval
     3. Ask questions in natural language
     4. The system finds relevant information from your sources or searches the web when needed
+    5. View the agent's actions by clicking "View Actions" below each response
     """
     )
 
@@ -311,8 +323,21 @@ with col1:
             )
             st.markdown("</div>", unsafe_allow_html=True)
 
+    # Function to fetch action history
+    def get_action_history():
+        """Fetch action history for a specific message if possible"""
+        try:
+            # For now, just fetching the latest history:
+            response = requests.get(AGENTS_TASK_ACTION_HISTORY_URL)
+            if response.status_code == 200:
+                return response.json().get("history", "No action history available")
+            else:
+                return f"Failed to fetch action history: {response.status_code}"
+        except Exception as e:
+            return f"Exception occurred fetching action history: {str(e)}"
+
     # Display chat messages with enhanced styling
-    for message in st.session_state.messages:
+    for idx, message in enumerate(st.session_state.messages):
         if message["role"] == "user":
             st.markdown(
                 f'<div style="text-align: right;"><div class="chat-message-user">{message["content"]}</div></div>',
@@ -323,6 +348,28 @@ with col1:
                 f'<div style="text-align: left;"><div class="chat-message-ai">{message["content"]}</div></div>',
                 unsafe_allow_html=True,
             )
+
+            # Add action history dropdown after each AI message
+            # Create unique key for this expander and message
+            expander_key = f"action_history_{idx}"
+            message_key = f"message_{idx}"
+
+            # Create expander (dropdown) for action history
+            with st.expander("🔍 View Actions", expanded=False):
+                # Check if we already fetched this specific message's action history
+                if message_key not in st.session_state.action_history:
+                    with st.spinner("Loading action history..."):
+                        # Get action history for this specific message/response
+                        action_history = get_action_history()
+                        # Store it in the dictionary with the message-specific key
+                        st.session_state.action_history[message_key] = action_history
+
+                # Display the saved action history for this specific message
+                st.markdown(
+                    '<div class="action-history-content">', unsafe_allow_html=True
+                )
+                st.code(st.session_state.action_history[message_key], language="text")
+                st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -408,3 +455,13 @@ if prompt := st.chat_input("Ask me anything about your document or URL..."):
         st.session_state.messages.append(
             {"role": "assistant", "content": full_response}
         )
+
+        # Get and store the action history immediately
+        message_idx = len(st.session_state.messages) - 1
+        message_key = f"message_{message_idx}"
+        st.session_state.action_history[message_key] = get_action_history()
+
+        # Display the action history expander for the current message
+        with st.expander("🔍 View Actions", expanded=False):
+            st.code(st.session_state.action_history[message_key], language="text")
+            st.markdown("</div>", unsafe_allow_html=True)
