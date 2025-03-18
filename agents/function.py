@@ -87,7 +87,7 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
         logger.info(f"\n\nConversational Response: {response}")
 
         with open(tmp_file_path, "w", encoding="utf-8") as f:
-            f.write("Action: Initial → conversational_responder\n\nReason: Is conversational.")
+            f.write("Action: Initial → conversational_responder\nReason: Is conversational.")
 
         return {"answer": response}
 
