@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+import os
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import logging
@@ -104,6 +105,19 @@ async def response_query(request: AgentsRequest):
         media_type="text/plain",  # for text streaming
         # media_type="application/x-ndjson" # if wanted to stream in json object
     )
+
+
+@app.get("/latest-task-router-action-history")
+def get_task_router_action_history():
+    file_path = "/tmp/latest_task_router_action_history.txt"
+
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Task router action history not found.")
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        history = f.read()
+
+    return {"history": history}
 
 
 @app.get("/health")

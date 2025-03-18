@@ -1,3 +1,4 @@
+import os
 from typing import TypedDict, List, Union, Literal
 from langchain_core.messages import (
     HumanMessage,
@@ -17,8 +18,8 @@ from engines.task_router import TaskRouterAction, router_action
 from engines.query_rewriter import QueryWriterOutput, rewrite_query
 from engines.response_checker import ResponseCheckerOutput, check_response
 from engines.query_classifier import QueryClassifierOutput, classify_query
-from engines.conversation_responder import (
-    response_conversation,
+from engines.conversational_responder import (
+    response_conversational,
 )
 from tools.web_search import tavily_search, TavilySearchInput
 from tools.vectorstore_retriever import milvus_retriever
@@ -38,6 +39,10 @@ logger = logging.getLogger(__name__)
 # langchain.debug = True
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
+tmp_dir = "/tmp"
+# os.makedirs(tmp_dir, exist_ok=True)
+tmp_file_path = os.path.join(tmp_dir, "latest_task_router_action_history.txt")
 
 
 class AgentState(TypedDict):
@@ -67,22 +72,12 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
 
         logger.info(f"Is conversational? {classify_result}")
 
-        return {
-            "rewritten_query": "",
-            "kb_context": "",
-            "web_context": "",
-            "answer": "",
-            "response_check": "",
-            "current_step": "",
-            "task_action_history": [],
-            "task_action_reason_history": [],
-            "is_conversational": classify_result,
-        }
+        return {"is_conversational": classify_result}
 
-    async def execute_respond_conversation(
+    async def execute_respond_conversational(
         state: AgentState, config: RunnableConfig
     ) -> dict:
-        response = await response_conversation(
+        response = await response_conversational(
             llm=llm,
             query=state["query"],
             chat_history=state["messages"],
@@ -90,6 +85,9 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
         )
 
         logger.info(f"\n\nConversational Response: {response}")
+
+        with open(tmp_file_path, "w", encoding="utf-8") as f:
+            f.write("Action: Initial → conversational_responder\n\nReason: Is conversational.")
 
         return {"answer": response}
 
@@ -201,15 +199,18 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
         task_router_action_history = "\n\nTask router decisions:\n\n"
         for action, reason in zip(task_action_history, task_action_reason_history):
             task_router_action_history += f"Action: {action}\nReason: {reason}\n\n"
-        logger.info(task_router_action_history)
+        # logger.info(task_router_action_history)
+
+        with open(tmp_file_path, "w", encoding="utf-8") as f:
+            f.write(task_router_action_history)
 
         return {"answer": response}
 
     def initial_routing(
         state: AgentState,
-    ) -> Literal["conversation_responder", "task_router"]:
+    ) -> Literal["conversational_responder", "task_router"]:
         if state["is_conversational"].lower() == "true":
-            return "conversation_responder"
+            return "conversational_responder"
         else:
             return "task_router"
 
@@ -242,7 +243,7 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
 
     workflow.add_node("task_router", task_router_node)
     workflow.add_node("query_classifier", execute_classify_query)
-    workflow.add_node("conversation_responder", execute_respond_conversation)
+    workflow.add_node("conversational_responder", execute_respond_conversational)
     workflow.add_node("query_rewriter", execute_rewrite_query)
     workflow.add_node("milvus_retriever", execute_milvus_retrieve)
     workflow.add_node("tavily_searcher", execute_tavily_search)
@@ -254,7 +255,7 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
         "query_classifier",
         initial_routing,
         {
-            "conversation_responder": "conversation_responder",
+            "conversational_responder": "conversational_responder",
             "task_router": "task_router",
         },
     )
@@ -278,7 +279,7 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
     workflow.add_edge("initial_answer_crafter", "task_router")
     workflow.add_edge("response_checker", "task_router")
 
-    workflow.add_edge("conversation_responder", END)
+    workflow.add_edge("conversational_responder", END)
     workflow.add_edge("final_answer_crafter", END)
 
     workflow.set_entry_point("query_classifier")
@@ -342,7 +343,11 @@ if __name__ == "__main__":
     asyncio.run(main())
 
     # # Visualize the graph
-    # graph = create_multi_agents()
+    # embedding_model = SentenceTransformer(
+    #     model_name_or_path=EMBEDDING_MODEL, device=device, trust_remote_code=True
+    # )
+    #
+    # graph = create_multi_agents(embedding_model=embedding_model)
     # try:
     #     img = Image(
     #         graph.get_graph().draw_mermaid_png(
@@ -350,7 +355,7 @@ if __name__ == "__main__":
     #         )
     #     )
     #
-    #     with open("./assets/graph_visualization.png", "wb") as f:
+    #     with open(".././assets/graph_visualization.png", "wb") as f:
     #         f.write(img.data)
     # except Exception:
     #     pass

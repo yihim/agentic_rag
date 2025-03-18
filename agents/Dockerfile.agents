@@ -56,6 +56,8 @@ WORKDIR /app
 # Copy application code
 COPY --chown=appuser:appuser . .
 
+RUN mkdir -p /app/tmp && chown appuser:appuser /app/tmp && chmod 755 /app/tmp
+
 # Switch to non-root user
 USER appuser
 

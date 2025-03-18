@@ -12,13 +12,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def response_conversation(
+async def response_conversational(
     llm,
     query: str,
     chat_history: List[Union[HumanMessage, AIMessage]],
     config: RunnableConfig,
 ):
-    status = "-" * 20, "RESPOND CONVERSATION", "-" * 20
+    status = "-" * 20, "RESPOND CONVERSATIONAL", "-" * 20
     logger.info(status)
     prompt = ChatPromptTemplate.from_messages(
         ("system", CONVERSATION_RESPONDER_SYSTEM_PROMPT)
