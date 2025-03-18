@@ -109,7 +109,7 @@ async def response_query(request: AgentsRequest):
 
 @app.get("/latest-task-router-action-history")
 def get_task_router_action_history():
-    file_path = "/tmp/latest_task_router_action_history.txt"
+    file_path = "/app/tmp/latest_task_router_action_history.txt"
 
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Task router action history not found.")

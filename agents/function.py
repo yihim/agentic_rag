@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-tmp_dir = "/tmp"
+tmp_dir = "/app/tmp"
 # os.makedirs(tmp_dir, exist_ok=True)
 tmp_file_path = os.path.join(tmp_dir, "latest_task_router_action_history.txt")
 
