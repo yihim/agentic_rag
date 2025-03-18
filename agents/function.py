@@ -196,7 +196,7 @@ def create_multi_agents(embedding_model: SentenceTransformer) -> StateGraph.comp
         # Check action and reason history
         task_action_history = state["task_action_history"].copy()
         task_action_reason_history = state["task_action_reason_history"].copy()
-        task_router_action_history = "\n\nTask router decisions:\n\n"
+        task_router_action_history = ""
         for action, reason in zip(task_action_history, task_action_reason_history):
             task_router_action_history += f"Action: {action}\nReason: {reason}\n\n"
         # logger.info(task_router_action_history)
